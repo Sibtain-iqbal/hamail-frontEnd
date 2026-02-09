@@ -1,6 +1,5 @@
 // API client for backend connection
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://hamaildevbackend.vercel.app/v1";
+const API_BASE_URL = "https://hamail-backend.vercel.app/v1";
 
 class ApiClient {
   constructor() {
