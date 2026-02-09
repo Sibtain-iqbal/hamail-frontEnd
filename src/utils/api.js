@@ -1,5 +1,5 @@
 // API client for backend connection
-const API_BASE_URL = "https://zentradev.vercel.app/v1"
+const API_BASE_URL = "https://zentradev.vercel.app/"
 
 class ApiClient {
   constructor() {
