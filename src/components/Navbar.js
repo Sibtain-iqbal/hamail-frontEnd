@@ -87,7 +87,7 @@ export default function Navbar() {
         >
           <nav className="  max-w-[1062px] bg-[#FFF] sm:mx-auto py-3 pr-4 pl-8 shadow-[0_0_40px_0_rgba(0,0,0,0.16)] flex items-center justify-between  rounded-full border mx-2.5   border-[#EEEEEE] ">
             <div className="flex items-center">
-              <Logo />
+             
             </div>
 
           {/* Center: Navigation Items - Desktop */}
