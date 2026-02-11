@@ -196,18 +196,18 @@ export default function OnboardingModal({ isOpen, onComplete }) {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden"
+            className="relative w-full max-w-2xl max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-2xl overflow-hidden"
           >
             {/* Close Button */}
             <button
               onClick={() => onComplete(false)}
-              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100"
+              className="absolute top-4 right-4 z-10 p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100"
             >
               <XMarkIcon className="w-6 h-6" />
             </button>
 
             {/* Progress Bar */}
-            <div className="w-full h-2 bg-gray-200">
+            <div className="w-full h-2 bg-gray-200 shrink-0">
               <motion.div
                 className="h-full bg-gradient-to-r from-primary to-tertiary"
                 initial={{ width: 0 }}
@@ -218,7 +218,7 @@ export default function OnboardingModal({ isOpen, onComplete }) {
               />
             </div>
 
-            <div className="p-6">
+            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
               {/* Header */}
               <div className="mb-4">
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">
@@ -277,11 +277,11 @@ export default function OnboardingModal({ isOpen, onComplete }) {
                             max="50"
                             value={formData.maxTradesPerDay}
                             onChange={(e) =>
-                              handleInputChange(
-                                "maxTradesPerDay",
-                                e.target.value
-                              )
-                            }
+                                handleInputChange(
+                                  "maxTradesPerDay",
+                                  e.target.value
+                                )
+                              }
                             placeholder="e.g., 3"
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                           />
@@ -529,10 +529,12 @@ export default function OnboardingModal({ isOpen, onComplete }) {
                   </motion.div>
                 </AnimatePresence>
               )}
+            </div>
 
-              {/* Action Buttons */}
-              {!isLoading && (
-                <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
+            {/* Action Buttons */}
+            {!isLoading && (
+              <div className="p-6 border-t border-gray-200 bg-white shrink-0">
+                <div className="flex items-center justify-between">
                   <button
                     onClick={handleBack}
                     disabled={currentStep === 1}
@@ -558,8 +560,8 @@ export default function OnboardingModal({ isOpen, onComplete }) {
                       : "Next"}
                   </GlassmorphicButton>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </motion.div>
         </div>
       )}
