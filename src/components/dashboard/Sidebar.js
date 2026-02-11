@@ -196,69 +196,69 @@ const Sidebar = ({ collapsed = false, onToggle }) => {
           {/* Right Side Actions */}
           <div className="flex items-center space-x-2">
             {/* Search Icon */}
-            <button className="w-10 h-10 flex items-center justify-center rounded-full bg-[#EAF1F0] border border-[#FFFFFF] transition-colors">
-              <Icon className="w-5 h-5 text-[#363636]">
+            <button className="w-10 h-10 flex items-center justify-center rounded-full bg-[##dde7e7] border transition-colors">
+              {/* <Icon className="w-5 h-5 text-[#363636]">
                 <circle cx="11" cy="11" r="8" />
                 <path d="m21 21-4.3-4.3" />
-              </Icon>
+              </Icon> */}
             </button>
 
             {/* Settings Icon with Popover */}
             <div className="relative">
               <button
                 onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                className="w-10 h-10 flex items-center justify-center rounded-full bg-[#EAF1F0] transition-colors border border-[#FFFFFF]"
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-[#dde7e7] transition-colors border "
               >
-                <Icon className="w-5 h-5 text-[#363636]">
+                {/* <Icon className="w-5 h-5 text-[#363636]">
                   <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
                   <circle cx="12" cy="12" r="3" />
-                </Icon>
+                </Icon> */}
               </button>
 
               {isSettingsOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-[#EAF1F0] rounded-xl shadow-lg  border border-[#FFFFFF] py-1 z-50">
+                <div className="absolute right-0 mt-2 w-48 bg-[#dde7e7] rounded-xl shadow-lg   py-1 z-50">
                   <button
                     onClick={handleLogout}
                     className="w-full px-4 py-2 text-left text-sm text-[#363636] flex items-center gap-2"
                   >
-                    <Icon className="w-4 h-4">
+                    {/* <Icon className="w-4 h-4">
                       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                       <polyline points="16 17 21 12 16 7" />
                       <line x1="21" y1="12" x2="9" y2="12" />
                     </Icon>
-                    Logout
+                    Logout */}
                   </button>
                 </div>
               )}
             </div>
 
             {/* Notification Icon */}
-            <button className="w-10 h-10 flex items-center justify-center rounded-full bg-[#EAF1F0] transition-colors border border-[#FFFFFF]">
-              <Icon className="w-5 h-5 text-[#363636]">
+            <button className="w-10 h-10 flex items-center justify-center rounded-full bg-[#dde7e7] transition-colors">
+              {/* <Icon className="w-5 h-5 text-[#363636]">
                 <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
                 <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-              </Icon>
+              </Icon> */}
             </button>
 
             {/* User Profile */}
-            <div className="flex items-center bg-[#EAF1F0] rounded-full pl-1 pr-4 py-1 gap-3 cursor-pointe transition-colors border border-[#FFFFFF]">
-              <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200">
+            <div className="flex items-center bg-[#dde7e7]  pl-1 pr-4 py-1 gap-3 ">
+              <div className="w-8 h-8 rounded-full overflow-hidden">
                 {/* Placeholder for user image if available, or generic avatar */}
-                <Image
+                {/* <Image
                   src={profile} // from public folder
                   alt="Profile image"
                   width={36}
                   height={36}
-                />
+                /> */}
                 {/* <div className="w-full h-full bg-gradient-to-br from-orange-300 to-orange-500" /> */}
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[14px] font-medium text-[#363636]">
+                {/* <span className="text-[14px] font-medium text-[#363636]">
                   Paityn Bator
                 </span>
                 <Icon className="w-4 h-4 text-[#363636]">
                   <path d="m6 9 6 6 6-6" />
-                </Icon>
+                </Icon> */}
               </div>
             </div>
           </div>
