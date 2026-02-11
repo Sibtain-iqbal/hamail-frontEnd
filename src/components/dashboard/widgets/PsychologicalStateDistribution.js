@@ -85,7 +85,7 @@ export default function PsychologicalStateDistribution({
       className="bg-[#E8F2F3] border border-[#FFFFFF] rounded-[20px] p-[20px] h-full flex flex-col relative"
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-5 relative z-10">
+      <div className="flex items-center justify-between mb-5 relative">
         <h3 className="text-[18px] font-[500] text-[#363636]">
           Psychological Traits
         </h3>

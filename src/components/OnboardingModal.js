@@ -218,9 +218,9 @@ export default function OnboardingModal({ isOpen, onComplete }) {
               />
             </div>
 
-            <div className="p-8">
+            <div className="p-6">
               {/* Header */}
-              <div className="mb-8">
+              <div className="mb-4">
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">
                   {currentStep === 1 && "Set Your Trading Limits"}
                   {currentStep === 2 && "Define Your Strategy"}
@@ -265,7 +265,7 @@ export default function OnboardingModal({ isOpen, onComplete }) {
                   >
                     {/* Step 1: Trading Limits */}
                     {currentStep === 1 && (
-                      <div className="space-y-6">
+                      <div className="space-y-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
                             How many trades or setups do you typically allow
@@ -325,7 +325,7 @@ export default function OnboardingModal({ isOpen, onComplete }) {
 
                     {/* Step 2: Trading Strategy */}
                     {currentStep === 2 && (
-                      <div className="space-y-6">
+                      <div className="space-y-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
                             What Risk-to-Reward ratio do you typically aim for?
@@ -380,7 +380,7 @@ export default function OnboardingModal({ isOpen, onComplete }) {
                             ].map((session) => (
                               <label
                                 key={session.value}
-                                className="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                                className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
                               >
                                 <input
                                   type="checkbox"
@@ -417,7 +417,7 @@ export default function OnboardingModal({ isOpen, onComplete }) {
                             ].map((option) => (
                               <label
                                 key={option.value}
-                                className="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                                className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
                               >
                                 <input
                                   type="radio"
@@ -445,8 +445,8 @@ export default function OnboardingModal({ isOpen, onComplete }) {
 
                     {/* Step 3: Review */}
                     {currentStep === 3 && (
-                      <div className="space-y-6">
-                        <div className="bg-gray-50 rounded-lg p-6 space-y-4">
+                      <div className="space-y-4">
+                        <div className="bg-gray-50 rounded-lg p-4 space-y-4">
                           <h3 className="font-semibold text-gray-900 text-lg mb-4">
                             Your Trading Plan Summary
                           </h3>
@@ -532,7 +532,7 @@ export default function OnboardingModal({ isOpen, onComplete }) {
 
               {/* Action Buttons */}
               {!isLoading && (
-                <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
+                <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
                   <button
                     onClick={handleBack}
                     disabled={currentStep === 1}

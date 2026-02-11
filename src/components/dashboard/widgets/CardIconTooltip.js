@@ -2,7 +2,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 
-export default function CardIconTooltip({ children, tooltipText, title, variant = "light", position = "top" }) {
+export default function CardIconTooltip({ children, tooltipText, title, variant = "light", position = "bottom" }) {
   const [isHovered, setIsHovered] = useState(false);
 
   // Determine if we're on a dark background (like ZentraBreathwork or QuoteOfTheDay)
