@@ -124,9 +124,21 @@ export default function PsychologicalStabilityTrend({ trades = [] }) {
         <h3 className="text-lg font-medium text-gray-800">
           Psychological Stability Trend
         </h3>
-        <button className="flex items-center gap-2 bg-[#F2F7F7] px-4 py-1.5 rounded-full text-xs font-normal text-[#363636] border border-[#FFFFFF] transition-colors">
-          Today <ChevronDownIcon className="w-4 h-4" />
-        </button>
+        <div className="relative flex items-center gap-2 bg-[#F2F7F7] px-3 py-3 rounded-full text-xs font-normal text-[#363636] border border-[#FFFFFF] transition-colors hover:bg-[#EEF6F6]">
+          <select
+            defaultValue="Today"
+            className="appearance-none bg-transparent pr-6 text-xs text-[#363636] font-normal leading-none outline-none"
+          >
+            <option value="Today">Today</option>
+            <option value="1w">1 Week</option>
+            <option value="2w">2 Weeks</option>
+            <option value="1m">1 Month</option>
+          </select>
+          <ChevronDownIcon
+            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#363636]"
+            aria-hidden="true"
+          />
+        </div>
       </div>
 
       {/* Chart */}

@@ -1,7 +1,7 @@
 "use client";
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import { ChartBarIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 
 export default function PlanControlCard({
   percentage = 78,
@@ -132,7 +132,7 @@ export default function PlanControlCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.1 }}
-      className="relative flex flex-col p-6 overflow-visible border border-[#fff] shadow-sm"
+      className="relative flex flex-col p-6 overflow-visible border border-[#fff] shadow-sm group/plan"
       style={{
         // width: "328px",
        
@@ -144,10 +144,21 @@ export default function PlanControlCard({
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-lg font-medium text-[#363636]">Plan Control</h3>
-        <button className="flex text-[#363636] items-center gap-1 px-3 py-1.5 bg-[#F2F7F7] rounded-full text-[12px] font-normal border border-[#fff] ">
-          Today
-          <ChevronDownIcon className="w-3 h-3 stroke-[3] text-[#363636]" />
-        </button>
+        <div className="relative flex items-center gap-2 bg-[#F2F7F7] px-3 py-3 rounded-full text-xs font-normal text-[#363636] border border-[#FFFFFF] transition-colors hover:bg-[#EEF6F6]">
+          <select
+            defaultValue="Today"
+            className="appearance-none bg-transparent pr-6 text-xs text-[#363636] font-normal leading-none outline-none"
+          >
+            <option value="Today">Today</option>
+            <option value="1w">1 Week</option>
+            <option value="2w">2 Weeks</option>
+            <option value="1m">1 Month</option>
+          </select>
+          <ChevronDownIcon
+            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#363636]"
+            aria-hidden="true"
+          />
+        </div>
       </div>
 
       {/* Main Stats */}
