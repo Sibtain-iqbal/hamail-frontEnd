@@ -359,7 +359,7 @@ export default function StatesExplanationSection() {
       className="relative flex justify-center"
     >
       <Image
-        src="/images/Wallpaper.png"
+        src="/images/ss.jpeg"
         // {/* FIX: Added w-full h-auto for responsive scaling */}
         className="relative z-10 w-full h-auto max-w-[300px] sm:max-w-none" 
         width={600}
