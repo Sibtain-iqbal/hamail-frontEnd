@@ -21,7 +21,7 @@ export default function AboutPage() {
             <div className="w-24 h-1 bg-gradient-to-r from-primary to-secondary rounded-full mx-auto mb-8"></div>
             <p className="text-lead text-gray-600 max-w-3xl mx-auto">
               A family's journey from challenge to hope, creating a world where
-              every child's voice matters
+              every child's voice matter
             </p>
           </motion.div>
         </div>
