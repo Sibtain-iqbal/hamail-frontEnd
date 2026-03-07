@@ -123,10 +123,11 @@ export default function TabletHero() {
           duration: 1.4,
           ease: [0.22, 0.61, 0.36, 1],
         }}
-        className="relative w-full max-w-[900px] overflow-visible"
+        className="relative w-full max-w-[900px] pb-[10%] overflow-visible"
       >
         <Image
-          src="/images/tablet-heroSection2.png"
+          src="/images/new.jpeg"
+          // src="/images/tablet-heroSection2.png"
           width={size}
           height={(size * 500) / 580}
           alt="Dashboard"
@@ -135,8 +136,9 @@ export default function TabletHero() {
   sm:w-full        /* tablet+ */
   mx-auto          /* center on mobile */
   h-auto
-  rounded-[24px]
-  sm:rounded-[48px]
+  rounded-[20px]
+
+  
 "
           style={{ boxShadow: "0 0 44.636px 0 rgba(0, 0, 0, 0.30)" }}
         />
@@ -156,12 +158,12 @@ export default function TabletHero() {
 "
         >
           <Image
-            src="/images/right-dashboard.svg"
+            src="/images/right-layout.png"
             alt="Right Overlay"
             width={197}
             height={200}
             className="
-             object-contain max-w-[80px] sm:max-w-[197px]
+             object-contain w-[350px] h-[200px] mr-[px]
             "
           />
         </motion.div>
