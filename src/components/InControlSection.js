@@ -191,11 +191,12 @@ const StateLoopCard = ({ delay }) => {
         <div className="absolute bottom-0 right-0 w-full h-full flex justify-end items-end pointer-events-none">
           <img
             ref={imageRef}
-            src="/images/tablet-heroSection4.png"
+            // src="/images/tablet-heroSection4.png"
+              src="/images/new.jpeg"
             alt="Dashboard Preview"
             width={786}
             height={422}
-            className="w-[75%] md:w-[81%]"
+            className="w-[65%] md:w-[95%]"
             style={{
               transform: "translate(40%, 25%)",
             }}
