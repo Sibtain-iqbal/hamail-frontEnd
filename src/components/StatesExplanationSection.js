@@ -162,7 +162,7 @@ export default function StatesExplanationSection() {
                   />
                 </div>
               </div>
-              <div className="pt-[75px] text-center z-10 relative px-4">
+              <div className="pt-[60px] text-center z-10 relative px-4">
                 <h3 className="mx-auto max-w-[22rem] sm:max-w-none">
                   <span
                     style={{
@@ -175,6 +175,7 @@ export default function StatesExplanationSection() {
                     className="
         block
         text-[32px] sm:text-[40px]
+        
         leading-[40px] sm:leading-[52px]
         font-semibold
         break-words
@@ -186,14 +187,15 @@ export default function StatesExplanationSection() {
               </div>
 
               {/* Image Area */}
-              <div className="absolute bottom-0 z-20 w-full flex justify-center rounded-2xl">
+              <div className="absolute bottom-[72px] z-20 w-full flex justify-center rounded-2xl">
                 <Image
                   ref={imageRef}
                   width={735}
                   height={404}
-                  src="/images/tablet-heroSection4.png"
+                  // src="/images/tablet-heroSection4.png"
+                   src="/images/new.jpeg"
                   alt="Dashboard Preview"
-                  className="sm:w-[90%] w-[33%] sm:translate-y-[61%] -translate-y-[15%%] rounded-xl"
+                  className="sm:w-[90%] sm:translate-y-[60%]  -translate-y-[15%%] rounded-xl"
                 />
               </div>
             </div>
@@ -238,7 +240,7 @@ export default function StatesExplanationSection() {
                     </p>
 
                     <Image
-                      src="/images/trading1.png"
+                      src="/images/right-layout.png"
                       width={163}
                       height={126}
                       alt="trading1"
@@ -271,11 +273,11 @@ export default function StatesExplanationSection() {
                     </p>
 
                     <Image
-                      src="/images/trading2.png"
+                      src="/images/heatmapnew.png"
                       width={163}
                       height={126}
                       alt="trading1"
-                      className="w-full sm:w-[163px] h-auto object-contain"
+                      className="w-full sm:w-[163px] rounded-[15px] h-auto object-contain"
                     />
                   </div>
                 </div>
