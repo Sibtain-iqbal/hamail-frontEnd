@@ -68,9 +68,6 @@ export default function ZentraBreathwork({ shouldSuggest, message }) {
     };
   }, [isActive]);
 
-  // variants for the progress border - unused
-  // const borderVariants = { ... };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -78,11 +75,9 @@ export default function ZentraBreathwork({ shouldSuggest, message }) {
       transition={{ duration: 0.5, delay: 0.4 }}
       className="relative overflow shadow-lg flex flex-col"
       style={{
-        // width: "668px",
         height: "201px",
         borderRadius: "20px",
-        // border: "px solid rgba(255, 255, 255, 0.1)",
-        background: "linear-gradient(to right, #244896, #55C3C8)", // Blue -> Teal
+        background: "linear-gradient(to right, #244896, #55C3C8)",
         boxShadow: "0 10px 30px -10px rgba(37, 99, 235, 0.3)",
         opacity: 1,
         transform: "rotate(0deg)",
@@ -94,7 +89,7 @@ export default function ZentraBreathwork({ shouldSuggest, message }) {
             Zentra Breathwork
           </h3>
           
-          <div className="min-h-[3rem] mb-4 flex items-center">
+          <div className="min-h-[3rem]  flex items-center">
             <AnimatePresence mode="wait">
               {!isActive ? (
                 <motion.p 
@@ -104,7 +99,6 @@ export default function ZentraBreathwork({ shouldSuggest, message }) {
                   exit={{ opacity: 0 }}
                   className="text-[10px] text-white/90 leading-relaxed font-light"
                 >
-                  You're in a calm and focused state, continue like this.
                 </motion.p>
               ) : (
                 <motion.p 
@@ -115,8 +109,8 @@ export default function ZentraBreathwork({ shouldSuggest, message }) {
                   className="text-lg font-medium text-white/90 leading-relaxed"
                 >
                   {phase === "Ready" ? "Get Ready..." : 
-                   phase === "Inhale" ? "Inhale..." : 
-                   phase === "Hold" ? "Hold..." : "Exhale..."}
+                   phase === "Inhale" ? "INHALE..." : 
+                   phase === "Hold" ? "HOLD..." : "EXHALE..."}
                 </motion.p>
               )}
             </AnimatePresence>
@@ -148,10 +142,27 @@ export default function ZentraBreathwork({ shouldSuggest, message }) {
              alt="Meditation" 
              className="w-full h-full object-contain drop-shadow-2xl"
              animate={{
+               scale:
+                 phase === "Inhale"
+                   ? 1.08
+                   : phase === "Exhale"
+                   ? 0.96
+                   : 1,
+               y:
+                 phase === "Inhale"
+                   ? -6
+                   : phase === "Exhale"
+                   ? 12
+                   : 0,
                filter: isActive && phase === "Hold" ? "brightness(1.1)" : "brightness(1)"
              }}
              transition={{
-               duration: 4,
+               duration:
+                 phase === "Inhale"
+                   ? 4
+                   : phase === "Exhale"
+                   ? 4
+                   : 0.8,
                ease: "easeInOut"
              }}
            />

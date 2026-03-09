@@ -45,10 +45,10 @@ export default function MentalBatteryCard({
           <h3 className="text-xl font-medium text-gray-700">Mental Battery</h3>
           <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
             <Battery50Icon className="w-5 h-5 text-gray-400" />
-          
+
           </div>
         </div>
-        
+
         <div className="flex-1 flex flex-col items-center justify-center py-4">
           <div className="relative w-48 h-48 opacity-20 grayscale">
             <Image
@@ -80,23 +80,23 @@ export default function MentalBatteryCard({
           <div className="w-10 h-10 rounded-full bg-[#F2F7F7] border border-[#FFFFFF] flex items-center justify-center shadow-sm cursor-help">
             {/* <Battery50Icon className="w-5 h-5 text-gray-600" /> */}
             <svg
-  xmlns="http://www.w3.org/2000/svg"
-  width={18}
-  height={18}
-  viewBox="0 0 24 24"
-  fill="none"
-  stroke="currentColor"
-  strokeWidth={2}
-  strokeLinecap="round"
-  strokeLinejoin="round"
-  className="lucide lucide-battery-full-icon lucide-battery-full text-[#363636]"
->
-  <path d="M10 10v4" />
-  <path d="M14 10v4" />
-  <path d="M22 14v-4" />
-  <path d="M6 10v4" />
-  <rect x="2" y="6" width="16" height="12" rx="2" />
-</svg>
+              xmlns="http://www.w3.org/2000/svg"
+              width={18}
+              height={18}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="lucide lucide-battery-full-icon lucide-battery-full text-[#363636]"
+            >
+              <path d="M10 10v4" />
+              <path d="M14 10v4" />
+              <path d="M22 14v-4" />
+              <path d="M6 10v4" />
+              <rect x="2" y="6" width="16" height="12" rx="2" />
+            </svg>
 
           </div>
         </CardIconTooltip>
@@ -104,26 +104,34 @@ export default function MentalBatteryCard({
 
       {/* Brain Image */}
       <div className="flex-1 flex items-center justify-center relative p-[20px]">
-        <div className="relative w-[211px] h-[212px] transition-transform duration-500 hover:scale-105">
+        <motion.div
+          className="relative w-[211px] h-[212px]"
+          animate={{ rotate: [0, 18, -18, 0] }}
+          transition={{
+            duration: 8,        // slow premium motion
+            ease: "linear",
+            repeat: Infinity,
+          }}
+        >
           {/* Subtle glow behind brain */}
           <div className="absolute inset-0 bg-teal-200/20 rounded-full blur-3xl" />
+
           <Image
             src="/brain1.png"
             alt="Brain Visualization"
             fill
-            className="object-contain relative z-10"
+            className="object-contain"
             priority
           />
-        </div>
+        </motion.div>
       </div>
 
       {/* Percentage & Status Badge */}
       <div className="flex items-center  mb-4">
         <span className="text-[32px] font-semibold text-gray-800 tracking-tight">{batteryLevel}%</span>
         <div className="flex items-center gap-2 px-4 py-1.5 bg-white/60 backdrop-blur-sm rounded-full border border-white/60 text-sm font-semibold text-gray-600 shadow-sm">
-          <span className={`w-2.5 h-2.5 rounded-full ${
-            activeIndex === 0 ? "bg-[#B2FFF0]" : activeIndex === 1 ? "bg-[#37E3C0]" : "bg-[#00BFA6]"
-          }`} />
+          <span className={`w-2.5 h-2.5 rounded-full ${activeIndex === 0 ? "bg-[#B2FFF0]" : activeIndex === 1 ? "bg-[#37E3C0]" : "bg-[#00BFA6]"
+            }`} />
           {displayLevel}
         </div>
       </div>
