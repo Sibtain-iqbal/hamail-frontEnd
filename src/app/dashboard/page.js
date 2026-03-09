@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
+import { DayPicker } from "react-day-picker";
+import "react-day-picker/dist/style.css";
 import { useRouter } from "next/navigation";
 import {
   ChartBarIcon,
@@ -60,6 +62,8 @@ export default function Dashboard() {
   const router = useRouter();
   const [period, setPeriod] = useState("MONTH");
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showCalendar, setShowCalendar] = useState(false);
   const [toast, setToast] = useState({
     show: false,
     message: "",
@@ -117,23 +121,23 @@ export default function Dashboard() {
   const transformedConsistencyData =
     consistencyTrendData?.scores && Array.isArray(consistencyTrendData.scores)
       ? consistencyTrendData.scores.map((entry) => ({
+        ...entry,
+        date: entry.date,
+        score: entry.score || entry.value || 0,
+      }))
+      : consistencyTrendData?.data && Array.isArray(consistencyTrendData.data)
+        ? consistencyTrendData.data.map((entry) => ({
           ...entry,
           date: entry.date,
           score: entry.score || entry.value || 0,
         }))
-      : consistencyTrendData?.data && Array.isArray(consistencyTrendData.data)
-        ? consistencyTrendData.data.map((entry) => ({
+        : consistencyTrendData?.history &&
+          Array.isArray(consistencyTrendData.history)
+          ? consistencyTrendData.history.map((entry) => ({
             ...entry,
             date: entry.date,
             score: entry.score || entry.value || 0,
           }))
-        : consistencyTrendData?.history &&
-            Array.isArray(consistencyTrendData.history)
-          ? consistencyTrendData.history.map((entry) => ({
-              ...entry,
-              date: entry.date,
-              score: entry.score || entry.value || 0,
-            }))
           : Array.isArray(consistencyTrendData)
             ? consistencyTrendData
             : null;
@@ -142,43 +146,52 @@ export default function Dashboard() {
     transformedConsistencyData,
   );
 
+
+  const formatDate = (date) => {
+    return date.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
   // Transform psychological radar data to object format for PsychologicalStateDistribution
   // Transform psychological radar data to object format for PsychologicalStateDistribution
   const transformedRadarData =
     // Case 1: Data has a 'traits' object (New v2 format)
     psychologicalRadarData?.traits &&
-    !Array.isArray(psychologicalRadarData.traits) &&
-    typeof psychologicalRadarData.traits === "object"
+      !Array.isArray(psychologicalRadarData.traits) &&
+      typeof psychologicalRadarData.traits === "object"
       ? psychologicalRadarData.traits
       : // Case 2: Data has a 'traits' array (Previous format)
-        psychologicalRadarData?.traits &&
-          Array.isArray(psychologicalRadarData.traits)
+      psychologicalRadarData?.traits &&
+        Array.isArray(psychologicalRadarData.traits)
         ? Object.fromEntries(
-            psychologicalRadarData.traits.map((trait) => [
-              trait.name || trait.trait,
-              trait.value || trait.score || 0,
-            ]),
-          )
+          psychologicalRadarData.traits.map((trait) => [
+            trait.name || trait.trait,
+            trait.value || trait.score || 0,
+          ]),
+        )
         : // Case 3: Data is in 'data' property
-          psychologicalRadarData?.data &&
-            typeof psychologicalRadarData.data === "object" &&
-            psychologicalRadarData.data !== null
+        psychologicalRadarData?.data &&
+          typeof psychologicalRadarData.data === "object" &&
+          psychologicalRadarData.data !== null
           ? Object.fromEntries(
-              Object.entries(psychologicalRadarData.data).map(
-                ([key, value]) => [
-                  key,
-                  typeof value === "object" && value !== null
-                    ? value.value || value.score || 0
-                    : value,
-                ],
-              ),
-            )
+            Object.entries(psychologicalRadarData.data).map(
+              ([key, value]) => [
+                key,
+                typeof value === "object" && value !== null
+                  ? value.value || value.score || 0
+                  : value,
+              ],
+            ),
+          )
           : // Case 4: Data IS the object (fallback), but exclude if it looks like a wrapper with 'traits' or 'message'
-            psychologicalRadarData &&
-              typeof psychologicalRadarData === "object" &&
-              !Array.isArray(psychologicalRadarData) &&
-              !psychologicalRadarData.traits &&
-              !psychologicalRadarData.message
+          psychologicalRadarData &&
+            typeof psychologicalRadarData === "object" &&
+            !Array.isArray(psychologicalRadarData) &&
+            !psychologicalRadarData.traits &&
+            !psychologicalRadarData.message
             ? psychologicalRadarData
             : null;
   const retryTimeoutRef = useRef(null);
@@ -467,23 +480,23 @@ export default function Dashboard() {
 
   const metrics = summaryData?.quickStats
     ? {
-        winRate: summaryData.quickStats.winRate || 0,
-        avgTrade: summaryData.quickStats.avgRiskReward || 0,
-        riskReward: summaryData.quickStats.avgRiskReward || 0,
-        tradesToday: todaysTradesCount,
-        maxTrades: 5,
-        planCompliance: summaryData.quickStats.confidence || 0,
-        earlyExitRate: earlyExitRate, // Use calculated value instead of API
-      }
+      winRate: summaryData.quickStats.winRate || 0,
+      avgTrade: summaryData.quickStats.avgRiskReward || 0,
+      riskReward: summaryData.quickStats.avgRiskReward || 0,
+      tradesToday: todaysTradesCount,
+      maxTrades: 5,
+      planCompliance: summaryData.quickStats.confidence || 0,
+      earlyExitRate: earlyExitRate, // Use calculated value instead of API
+    }
     : {
-        winRate: 0,
-        avgTrade: 0,
-        riskReward: 0,
-        tradesToday: todaysTradesCount,
-        maxTrades: 5,
-        planCompliance: 0,
-        earlyExitRate: earlyExitRate, // Use calculated value
-      };
+      winRate: 0,
+      avgTrade: 0,
+      riskReward: 0,
+      tradesToday: todaysTradesCount,
+      maxTrades: 5,
+      planCompliance: 0,
+      earlyExitRate: earlyExitRate, // Use calculated value
+    };
 
   const states = {
     focused: {
@@ -582,15 +595,32 @@ export default function Dashboard() {
               </p>
             </div>
 
-            <div className="flex items-center gap-2 justify-center">
-              <button className="flex text-[#363636] items-center gap-1 px-3 py-1.5 bg-[#F2F7F7] rounded-full text-[14px] font-normal border border-[#fff] ">
-                Today, Apr 24
+
+
+            {/* Date Picker oF dashboard */}
+
+            <div className="flex items-center gap-2 justify-center relative">
+              <button
+                onClick={() => setShowCalendar(!showCalendar)}
+                className="flex text-[#363636] items-center gap-1 px-3 py-1.5 bg-[#F2F7F7] rounded-full text-[16px] font-normal border border-[#fff]"
+              >
+                {formatDate(selectedDate)}
                 <ChevronDownIcon className="w-3 h-3 stroke-[3] text-[#363636]" />
               </button>
-              <button className="flex text-[#fff] items-center gap-1 px-3 py-1.5 bg-[#00BFA6] rounded-full text-[14px] font-normal ">
-                Begin Session
-                <ChevronDownIcon className="w-3 h-3 stroke-[3] text-[#fff] -rotate-90" />
-              </button>
+
+              {showCalendar && (
+                <div className="absolute top-10 right-0 z-50 bg-white p-3 rounded-xl shadow-xl border border-gray-200">
+                  <DayPicker
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => {
+                      if (date) setSelectedDate(date);
+                      setShowCalendar(false);
+                    }}
+                    captionLayout="dropdown-buttons"
+                  />
+                </div>
+              )}
             </div>
           </div>
 
@@ -613,7 +643,7 @@ export default function Dashboard() {
                         : mentalBatteryData?.status === "high_risk"
                           ? "High Risk"
                           : summaryData?.quickStats?.mentalBatteryLevel ||
-                            "Medium"
+                          "Medium"
                   }
                   message={mentalBatteryData?.message}
                   drainFactors={mentalBatteryData?.drainFactors}
@@ -662,7 +692,7 @@ export default function Dashboard() {
                     }
                     hasNoTrades={hasNoTrades}
                     trades={tradesData?.results || tradesData || []}
-                    
+
                   />
                 </div>
               </div>
@@ -727,7 +757,7 @@ export default function Dashboard() {
                         border: `1px solid rgba(255, 255, 255, 0.15)`,
                         boxShadow: `0 8px 32px 0 ${hexToRgba(
                           STATE_CONFIG[currentState]?.gradient.start ||
-                            colors.tertiary,
+                          colors.tertiary,
                           0.15,
                         )}, 0 0 0 1px rgba(255,255,255,0.1) inset`,
                       }}
@@ -735,7 +765,7 @@ export default function Dashboard() {
                         e.currentTarget.style.border = `1px solid rgba(255, 255, 255, 0.2)`;
                         e.currentTarget.style.boxShadow = `0 12px 40px 0 ${hexToRgba(
                           STATE_CONFIG[currentState]?.gradient.start ||
-                            colors.tertiary,
+                          colors.tertiary,
                           0.25,
                         )}, 0 0 0 1px rgba(255,255,255,0.15) inset`;
                       }}
@@ -743,7 +773,7 @@ export default function Dashboard() {
                         e.currentTarget.style.border = `1px solid rgba(255, 255, 255, 0.15)`;
                         e.currentTarget.style.boxShadow = `0 8px 32px 0 ${hexToRgba(
                           STATE_CONFIG[currentState]?.gradient.start ||
-                            colors.tertiary,
+                          colors.tertiary,
                           0.15,
                         )}, 0 0 0 1px rgba(255,255,255,0.1) inset`;
                       }}
@@ -754,11 +784,11 @@ export default function Dashboard() {
                         style={{
                           background: `linear-gradient(135deg, ${hexToRgba(
                             STATE_CONFIG[currentState]?.gradient.start ||
-                              colors.tertiary,
+                            colors.tertiary,
                             0.12,
                           )} 0%, ${hexToRgba(
                             STATE_CONFIG[currentState]?.gradient.end ||
-                              colors.primary,
+                            colors.primary,
                             0.08,
                           )} 100%)`,
                         }}
@@ -770,7 +800,7 @@ export default function Dashboard() {
                         style={{
                           background: `radial-gradient(circle at center, ${hexToRgba(
                             STATE_CONFIG[currentState]?.gradient.start ||
-                              colors.tertiary,
+                            colors.tertiary,
                             0.2,
                           )} 0%, transparent 70%)`,
                         }}
@@ -811,12 +841,12 @@ export default function Dashboard() {
                             background: `linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.3) 100%)`,
                             border: `1px solid ${hexToRgba(
                               STATE_CONFIG[currentState]?.gradient.start ||
-                                colors.tertiary,
+                              colors.tertiary,
                               0.2,
                             )}`,
                             boxShadow: `0 4px 16px 0 ${hexToRgba(
                               STATE_CONFIG[currentState]?.gradient.start ||
-                                colors.tertiary,
+                              colors.tertiary,
                               0.1,
                             )}`,
                           }}
@@ -978,8 +1008,7 @@ export default function Dashboard() {
                             You currently have {totalTrades}{" "}
                             {totalTrades === 1 ? "trade" : "trades"}.
                             {totalTrades < 5 &&
-                              ` ${5 - totalTrades} more ${
-                                5 - totalTrades === 1 ? "trade" : "trades"
+                              ` ${5 - totalTrades} more ${5 - totalTrades === 1 ? "trade" : "trades"
                               } needed.`}
                           </p>
                           <Link href="/dashboard/trades">
