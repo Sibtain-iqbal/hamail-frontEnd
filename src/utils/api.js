@@ -1,5 +1,6 @@
 // API client for backend connection
-const API_BASE_URL = "https://api.hellozentra.com/v1" 
+// const API_BASE_URL = "https://api.hellozentra.com/v1" 
+const API_BASE_URL = "http://localhost:2000/v1" 
 
 class ApiClient {
   constructor() {
@@ -273,8 +274,9 @@ class ApiClient {
     return this.fetch(`/dashboard?period=${period}`);
   }
 
-  async getDashboardSummary(period = "MONTH") {
-    return this.fetch(`/dashboard/summary?period=${period}`);
+  async getDashboardSummary(period = "MONTH", date = null) {
+    const dateParam = date ? `&date=${date instanceof Date ? date.toISOString() : date}` : "";
+    return this.fetch(`/dashboard/summary?period=${period}${dateParam}`);
   }
 
   // Analysis endpoints
@@ -460,34 +462,52 @@ class ApiClient {
   }
 
   // Zentra V2 endpoints
-  async getMentalBattery() {
-    return this.fetchV2("/zentra/mental-battery");
+  async getMentalBattery(date = null) {
+    const query = date
+      ? `?date=${date instanceof Date ? date.toISOString() : date}`
+      : "";
+    return this.fetchV2(`/zentra/mental-battery${query}`);
   }
 
-  async getPlanControl() {
-    return this.fetchV2("/zentra/plan-control");
+  async getPlanControl(date = null) {
+    const query = date
+      ? `?date=${date instanceof Date ? date.toISOString() : date}`
+      : "";
+    return this.fetchV2(`/zentra/plan-control${query}`);
   }
 
-  async getBehaviorHeatmap() {
-    return this.fetchV2("/zentra/behavior-heatmap");
+  async getBehaviorHeatmap(date = null) {
+    const query = date
+      ? `?date=${date instanceof Date ? date.toISOString() : date}`
+      : "";
+    return this.fetchV2(`/zentra/behavior-heatmap${query}`);
   }
 
-  async getPsychologicalRadar() {
-    return this.fetchV2("/zentra/psychological-radar");
+  async getPsychologicalRadar(date = null) {
+    const query = date
+      ? `?date=${date instanceof Date ? date.toISOString() : date}`
+      : "";
+    return this.fetchV2(`/zentra/psychological-radar${query}`);
   }
 
-  async getBreathworkSuggestion() {
-    return this.fetchV2("/zentra/breathwork-suggestion");
+  async getBreathworkSuggestion(date = null) {
+    const query = date
+      ? `?date=${date instanceof Date ? date.toISOString() : date}`
+      : "";
+    return this.fetchV2(`/zentra/breathwork-suggestion${query}`);
   }
 
-  async getPerformanceWindow() {
-    return this.fetchV2("/zentra/performance-window");
+  async getPerformanceWindow(date = null) {
+    const query = date
+      ? `?date=${date instanceof Date ? date.toISOString() : date}`
+      : "";
+    return this.fetchV2(`/zentra/performance-window${query}`);
   }
 
-  async getConsistencyTrend(days = "7") {
+  async getConsistencyTrend(days = "7", date = null) {
     // Use history endpoint with date range for last N days
-    const endDate = new Date();
-    const startDate = new Date();
+    const endDate = date ? new Date(date) : new Date();
+    const startDate = new Date(endDate);
     startDate.setDate(startDate.getDate() - parseInt(days));
     
     console.log('🌐 [API] Calling /zentra/consistency-trend/history with date range:', {
@@ -543,8 +563,11 @@ class ApiClient {
     return result;
   }
 
-  async getDailyQuote() {
-    return this.fetchV2("/zentra/daily-quote");
+  async getDailyQuote(date = null) {
+    const query = date
+      ? `?date=${date instanceof Date ? date.toISOString() : date}`
+      : "";
+    return this.fetchV2(`/zentra/daily-quote${query}`);
   }
 }
 

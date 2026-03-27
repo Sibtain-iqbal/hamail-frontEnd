@@ -27,7 +27,7 @@ export function useDashboard(period = "MONTH") {
   return { data, loading, error };
 }
 
-export function useDashboardSummary(period = "MONTH") {
+export function useDashboardSummary(period = "MONTH", date = null) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -35,28 +35,38 @@ export function useDashboardSummary(period = "MONTH") {
   const cacheRef = useRef({});
   const inFlightRef = useRef(null);
 
+  const getCacheKey = useCallback(() => {
+    const normalizedDate =
+      date instanceof Date ? date.toISOString().split("T")[0] : date;
+    return normalizedDate ? `${period}|${normalizedDate}` : `${period}|NOW`;
+  }, [period, date]);
+
   const fetchSummary = useCallback(
     async (force = false) => {
+      const cacheKey = getCacheKey();
+
       // Serve from cache when available and no force refresh requested
-      if (!force && cacheRef.current[period]) {
-        setData(cacheRef.current[period]);
+      if (!force && cacheRef.current[cacheKey]) {
+        setData(cacheRef.current[cacheKey]);
         setLoading(false);
-        return cacheRef.current[period];
+        return cacheRef.current[cacheKey];
       }
 
       // Avoid duplicate network requests for the same period
-      if (!force && inFlightRef.current?.period === period) {
+      if (!force && inFlightRef.current?.cacheKey === cacheKey) {
         return inFlightRef.current.promise;
       }
 
+      console.log("FETCHING DATA FOR:", date || "today");
       setLoading(true);
+      setData(null);
       setError(null);
       setErrorStatus(null);
 
       const requestPromise = apiClient
-        .getDashboardSummary(period)
+        .getDashboardSummary(period, date)
         .then((result) => {
-          cacheRef.current[period] = result;
+          cacheRef.current[cacheKey] = result;
           setData(result);
           return result;
         })
@@ -77,10 +87,10 @@ export function useDashboardSummary(period = "MONTH") {
           setLoading(false);
         });
 
-      inFlightRef.current = { period, promise: requestPromise };
+      inFlightRef.current = { cacheKey, promise: requestPromise };
       return requestPromise;
     },
-    [period]
+    [period, date, getCacheKey]
   );
 
   useEffect(() => {

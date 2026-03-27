@@ -1,6 +1,6 @@
 "use client";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Squares2X2Icon } from "@heroicons/react/24/outline";
 import BehaviourHeatmapDatePicker from "./BehaviourHeatmapDatePicker";
 import CardIconTooltip from "./CardIconTooltip";
@@ -86,6 +86,15 @@ const getStartOfWeek = (date) => {
   return new Date(d.setDate(diff));
 };
 
+// Helper to normalize dates to a local YYYY-MM-DD key.
+const toLocalDateKey = (dateLike) => {
+  const d = dateLike instanceof Date ? dateLike : new Date(dateLike);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
 // Helper: Normalize date to midnight UTC
 const normalizeDate = (date) => {
   const d = new Date(date);
@@ -136,6 +145,11 @@ const HeatmapTile = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false);
 
+  // Prevent stale tooltip content when the date/range changes quickly.
+  useEffect(() => {
+    if (isLoadingHistory) setIsHovered(false);
+  }, [isLoadingHistory, window]);
+
   return (
     <div
       className="relative flex-1 min-w-0"
@@ -156,7 +170,8 @@ const HeatmapTile = ({
         }}
       />
       <AnimatePresence>
-        {isHovered && window && (
+        {/* Only show tooltip when the cell has real score data */}
+        {isHovered && window && typeof window.score === "number" && Number.isFinite(window.score) && (
           <motion.div
             initial={{ opacity: 0, y: 5, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -166,7 +181,7 @@ const HeatmapTile = ({
           >
             <div className="bg-[#1A1A1A] bg-gradient-to-br  from-[#262626] to-[#1A1A1A] border border-white/10 rounded-xl p-3 shadow-2xl">
               <div className="text-white text-sm font-semibold mb-1">
-                Score: {window.score}{" "}
+                Score: {window.score ?? "—"}{" "}
                 <span className="text-xs font-normal text-gray-400">
                   ({window.tradeCount} trades)
                 </span>
@@ -188,12 +203,13 @@ const HeatmapTile = ({
 export default function BehaviourHeatmap({
   hasNoTrades = false,
   fetchHistory = null,
+  selectedDate = null,
 }) {
   // Date range state
   const [dateRange, setDateRange] = useState(() => {
     // Default to current week (Mon-Sun)
-    const today = new Date();
-    const start = getStartOfWeek(today);
+    const base = selectedDate ? new Date(selectedDate) : new Date();
+    const start = getStartOfWeek(base);
     const end = new Date(start);
     end.setDate(start.getDate() + 6);
     return { start, end };
@@ -201,38 +217,105 @@ export default function BehaviourHeatmap({
 
   const [historyData, setHistoryData] = useState([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const requestIdRef = useRef(0);
+  const [weekDateKeys, rangeStartEnd] = useMemo(() => {
+    // Grid uses the full week (Mon-Sun) for column mapping.
+    const weekStart = new Date(dateRange.start);
+    weekStart.setHours(0, 0, 0, 0);
+    const keys = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(weekStart);
+      d.setDate(weekStart.getDate() + i);
+      return toLocalDateKey(d);
+    });
+
+    // Fetch/render aggregation must be constrained to *selectedDate only*.
+    const fetchStart = selectedDate ? new Date(selectedDate) : new Date(weekStart);
+    fetchStart.setHours(0, 0, 0, 0);
+    const fetchEnd = new Date(fetchStart);
+    fetchEnd.setHours(23, 59, 59, 999);
+
+    return [keys, { start: fetchStart, end: fetchEnd }];
+  }, [dateRange, selectedDate]);
+
+  const filteredHistoryData = useMemo(() => {
+    if (hasNoTrades) return [];
+    const { start, end } = rangeStartEnd;
+    return (historyData || []).filter((dayEntry) => {
+      if (!dayEntry?.date) return false;
+      const t = new Date(dayEntry.date).getTime();
+      return Number.isFinite(t) && t >= start.getTime() && t <= end.getTime();
+    });
+  }, [historyData, rangeStartEnd, hasNoTrades]);
 
   // Fetch data when dateRange changes
   const fetchData = useCallback(async () => {
     if (!fetchHistory) return;
+    if (hasNoTrades) {
+      // Backend confirmed no trades for selected date; keep heatmap empty.
+      setHistoryData([]);
+      setIsLoadingHistory(false);
+      return;
+    }
 
+    const requestId = ++requestIdRef.current;
     setIsLoadingHistory(true);
+    setHistoryData([]); // clear old state immediately
     try {
-      const startIso = getIsoString(dateRange.start);
-      const endIso = getIsoString(dateRange.end, true);
+      const startIso = getIsoString(rangeStartEnd.start);
+      const endIso = getIsoString(rangeStartEnd.end, true);
 
-      console.log("Fetching heatmap data for range:", startIso, endIso);
+      console.log("FETCHING DATA FOR DATE:", selectedDate);
+      console.log("Fetching heatmap data for selected date range:", startIso, endIso);
       const result = await fetchHistory(startIso, endIso);
+
+      console.log("API RESPONSE:", result);
 
       if (result) {
         // If result has a 'history' array, use it. Otherwise wrap single result if applicable.
         // Based on API snippet, result.history is the array.
         const history = result.history || (result.windows ? [result] : []);
-        setHistoryData(history);
+        if (requestId !== requestIdRef.current) return;
+        console.log(
+          "HEATMAP RAW HISTORY DATES:",
+          (history || []).slice(0, 7).map((h) => toLocalDateKey(h?.date))
+        );
+        setHistoryData(history || []);
       } else {
+        if (requestId !== requestIdRef.current) return;
         setHistoryData([]);
       }
     } catch (error) {
       console.error("Error fetching heatmap data:", error);
+      if (requestId !== requestIdRef.current) return;
       setHistoryData([]); // Reset on error
     } finally {
+      if (requestId !== requestIdRef.current) return;
       setIsLoadingHistory(false);
     }
-  }, [dateRange, fetchHistory]);
+  }, [fetchHistory, selectedDate, rangeStartEnd, hasNoTrades]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Keep heatmap aligned to the dashboard's global selectedDate.
+  useEffect(() => {
+    if (!selectedDate) return;
+    const base = new Date(selectedDate);
+    const start = getStartOfWeek(base);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    setDateRange({ start, end });
+    setHistoryData([]); // prevent stale tiles
+    setIsLoadingHistory(Boolean(fetchHistory));
+  }, [selectedDate]);
+
+  // If backend confirms no trades for the selected date, never render stale heatmap snapshots.
+  useEffect(() => {
+    if (!hasNoTrades) return;
+    setHistoryData([]);
+    setIsLoadingHistory(false);
+  }, [hasNoTrades]);
 
   const handleDateChange = (newRange) => {
     // BehaviourHeatmapDatePicker returns { start, end } in range mode
@@ -254,13 +337,27 @@ export default function BehaviourHeatmap({
   const aggregatedData = useMemo(() => {
     const map = new Map(); // Key: "dayIndex-startTime", Value: { totalScore, totalTrades, count, message, color }
 
-    historyData.forEach((dayEntry) => {
+    console.log("HEATMAP SELECTED DATE:", selectedDate);
+    console.log("HEATMAP RANGE:", dateRange.start, dateRange.end);
+    console.log("HEATMAP RAW HISTORY COUNT:", historyData?.length || 0);
+    console.log("HEATMAP FILTERED HISTORY COUNT:", filteredHistoryData?.length || 0);
+
+    let debugMapped = 0;
+    filteredHistoryData.forEach((dayEntry) => {
       if (!dayEntry.date || !dayEntry.windows) return;
 
-      const date = new Date(dayEntry.date);
-      // Adjust JS getDay (0=Sun) to our 0=Mon system
-      let dayIndex = date.getDay() - 1;
-      if (dayIndex === -1) dayIndex = 6; // Sunday
+      const dayKey = toLocalDateKey(dayEntry.date);
+      const dayIndex = weekDateKeys.indexOf(dayKey);
+      if (dayIndex === -1) return;
+      if (debugMapped < 6) {
+        console.log("HEATMAP DAY ENTRY:", {
+          dayEntryDate: dayEntry.date,
+          dayKey,
+          mappedDayIndex: dayIndex,
+          windowsCount: Array.isArray(dayEntry.windows) ? dayEntry.windows.length : 0,
+        });
+        debugMapped++;
+      }
 
       const normalizedWindows = processWindows(dayEntry.windows);
 
@@ -269,10 +366,20 @@ export default function BehaviourHeatmap({
 
         const timeKey = `${window.startHour.toString().padStart(2, "0")}:00`;
         const key = `${dayIndex}-${timeKey}`; // e.g., "0-09:00" for Mon 9am
+        if (debugMapped < 6) {
+          // (limited) log first few window placements for hover correctness.
+          console.log("HEATMAP WINDOW MAP:", {
+            key,
+            windowId: window.id,
+            score: window.score,
+            tradeCount: window.tradeCount,
+          });
+        }
 
         if (!map.has(key)) {
           map.set(key, {
-            totalScore: 0,
+            scoreSum: 0,
+            scoreCount: 0,
             totalTrades: 0,
             count: 0,
             startHour: window.startHour,
@@ -283,7 +390,10 @@ export default function BehaviourHeatmap({
         }
 
         const agg = map.get(key);
-        agg.totalScore += window.score || 0;
+        if (typeof window.score === "number" && Number.isFinite(window.score)) {
+          agg.scoreSum += window.score;
+          agg.scoreCount += 1;
+        }
         agg.totalTrades += window.tradeCount || 0;
         agg.count += 1;
         // Store raw data to determine dominant color/message later if needed
@@ -292,8 +402,19 @@ export default function BehaviourHeatmap({
       });
     });
 
+    const scoredCells = Array.from(map.values()).filter((v) => v.scoreCount > 0).length;
+    console.log("HEATMAP AGGREGATED CELLS:", map.size);
+    console.log("HEATMAP SCORED CELLS:", scoredCells);
+
     return map;
-  }, [historyData]);
+  }, [historyData, filteredHistoryData, weekDateKeys, dateRange, selectedDate]);
+
+  const hasAnyHeatmapScores = useMemo(() => {
+    for (const v of aggregatedData.values()) {
+      if (typeof v?.scoreCount === "number" && v.scoreCount > 0) return true;
+    }
+    return false;
+  }, [aggregatedData]);
 
   // Helper to retrieve aggregated window for render
   const getAggregatedWindow = (dayIndex, timeSlotStart) => {
@@ -303,12 +424,14 @@ export default function BehaviourHeatmap({
 
     if (!agg) return null;
 
-    const avgScore = Math.round(agg.totalScore / agg.count);
+    const avgScore =
+      agg.scoreCount > 0 ? Math.round(agg.scoreSum / agg.scoreCount) : null;
 
     // Determine color based on average score
     // Logic: >= 70 green, >= 40 yellow, < 40 red
     let color = "grey";
-    if (avgScore >= 70) color = "green";
+    if (avgScore === null) color = "grey";
+    else if (avgScore >= 70) color = "green";
     else if (avgScore >= 40) color = "yellow";
     else color = "red";
 
@@ -319,9 +442,11 @@ export default function BehaviourHeatmap({
       color: color,
       count: agg.count, // Number of data points aggregated
       message:
-        agg.count > 1
-          ? `Avg. Score: ${avgScore}% over ${agg.count} sessions`
-          : agg.messages[0] || "No Data",
+        avgScore === null
+          ? agg.messages[0] || "No Data"
+          : agg.count > 1
+            ? `Avg. Score: ${avgScore}% over ${agg.count} sessions`
+            : agg.messages[0] || "No Data",
       // preserve dimensions
       startHour: agg.startHour,
       endHour: agg.endHour,
@@ -353,7 +478,8 @@ export default function BehaviourHeatmap({
 
   const currentTimeBlock = getCurrentTimeBlock();
   const today = new Date();
-  const currentDayIndex = today.getDay() - 1 === -1 ? 6 : today.getDay() - 1;
+  const currentDayIndex =
+    today.getDay() - 1 === -1 ? 6 : today.getDay() - 1;
 
   // Render variables
   // If range is > 7 days, we still show Mon-Sun columns.
@@ -368,8 +494,17 @@ export default function BehaviourHeatmap({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.2 }}
-      className="bg-[#E8F2F3] rounded-[20px] p-4 sm:p-5  border border-[#FFFFFF] flex flex-col"
+      className="relative bg-[#E8F2F3] rounded-[20px] p-4 sm:p-5  border border-[#FFFFFF] flex flex-col"
     >
+      {!isLoadingHistory && !hasAnyHeatmapScores && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/60 backdrop-blur-[2px] z-20 rounded-[20px]">
+          <div className="bg-white/80 px-6 py-4 rounded-xl shadow-sm border border-white/50 text-center">
+            <p className="text-sm font-medium text-gray-500">
+              No data available for this date
+            </p>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center justify-between gap-3 w-full ">
           <h3

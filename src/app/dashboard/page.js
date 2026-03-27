@@ -64,6 +64,9 @@ export default function Dashboard() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
+  useEffect(() => {
+    console.log("CURSOR RESET DUE TO DATE CHANGE");
+  }, [selectedDate]);
   const [toast, setToast] = useState({
     show: false,
     message: "",
@@ -75,13 +78,49 @@ export default function Dashboard() {
   const refreshTradingPlanStatus = tradingPlanContext?.refreshStatus;
   const setHasTradingPlan = tradingPlanContext?.setHasTradingPlan;
   const [brainSize, setBrainSize] = useState(400);
+
+  // Plan Control uses the onboarding trading plan (V1) to compute compliance.
+  const [tradingPlan, setTradingPlan] = useState(null);
+  const [tradingPlanLoading, setTradingPlanLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadTradingPlan() {
+      if (hasTradingPlan !== true) {
+        setTradingPlan(null);
+        setTradingPlanLoading(false);
+        return;
+      }
+
+      setTradingPlanLoading(true);
+      try {
+        console.log("FETCHING TRADING PLAN FOR PLAN CONTROL");
+        const plan = await apiClient.getTradingPlan();
+        if (cancelled) return;
+        setTradingPlan(plan);
+      } catch (err) {
+        if (cancelled) return;
+        console.error("Error fetching trading plan for Plan Control:", err);
+        setTradingPlan(null);
+      } finally {
+        if (cancelled) return;
+        setTradingPlanLoading(false);
+      }
+    }
+
+    loadTradingPlan();
+    return () => {
+      cancelled = true;
+    };
+  }, [hasTradingPlan]);
   const {
     data: summaryData,
     loading: summaryLoading,
     error: summaryError,
     errorStatus: summaryErrorStatus,
     refetch: refetchSummary,
-  } = useDashboardSummary(period);
+  } = useDashboardSummary(period, selectedDate);
   const {
     data: stateData,
     loading: stateLoading = true,
@@ -97,50 +136,60 @@ export default function Dashboard() {
 
   // Zentra V2 hooks
   const { data: mentalBatteryData, loading: mentalBatteryLoading } =
-    useMentalBattery();
+    useMentalBattery(selectedDate);
   const { data: planControlData, loading: planControlLoading } =
-    usePlanControl();
-  const { fetchHistory: fetchBehaviorHeatmapHistory } = useBehaviorHeatmap();
+    usePlanControl(selectedDate);
+  const {
+    data: behaviorHeatmapData,
+    loading: behaviorHeatmapLoading,
+    fetchHistory: fetchBehaviorHeatmapHistory,
+  } = useBehaviorHeatmap(selectedDate);
   const { data: psychologicalRadarData, loading: psychologicalRadarLoading } =
-    usePsychologicalRadar();
+    usePsychologicalRadar(selectedDate);
   const { data: breathworkData, loading: breathworkLoading } =
-    useBreathworkSuggestion();
+    useBreathworkSuggestion(selectedDate);
   const { data: performanceWindowData, loading: performanceWindowLoading } =
-    usePerformanceWindow();
+    usePerformanceWindow(selectedDate);
   const {
     data: consistencyTrendData,
     loading: consistencyTrendLoading,
     fetchHistory: fetchConsistencyTrendHistory,
     refetch: refetchConsistencyTrend,
-  } = useConsistencyTrend("7");
-  const { data: dailyQuoteData, loading: dailyQuoteLoading } = useDailyQuote();
+  } = useConsistencyTrend("7", selectedDate);
+  const { data: dailyQuoteData, loading: dailyQuoteLoading } = useDailyQuote(selectedDate);
 
   // Transform v2 data for widgets
   // Transform consistency trend data to preserve date and score for PsychologicalStabilityTrend
   console.log("🔄 [Dashboard] Raw consistencyTrendData:", consistencyTrendData);
   const transformedConsistencyData =
-    consistencyTrendData?.scores && Array.isArray(consistencyTrendData.scores)
-      ? consistencyTrendData.scores.map((entry) => ({
-        ...entry,
-        date: entry.date,
-        score: entry.score || entry.value || 0,
-      }))
-      : consistencyTrendData?.data && Array.isArray(consistencyTrendData.data)
-        ? consistencyTrendData.data.map((entry) => ({
+    consistencyTrendData?.trend && Array.isArray(consistencyTrendData.trend)
+      ? consistencyTrendData.trend.map((entry) => ({
           ...entry,
           date: entry.date,
           score: entry.score || entry.value || 0,
         }))
-        : consistencyTrendData?.history &&
-          Array.isArray(consistencyTrendData.history)
-          ? consistencyTrendData.history.map((entry) => ({
+      : consistencyTrendData?.scores && Array.isArray(consistencyTrendData.scores)
+        ? consistencyTrendData.scores.map((entry) => ({
             ...entry,
             date: entry.date,
             score: entry.score || entry.value || 0,
           }))
-          : Array.isArray(consistencyTrendData)
-            ? consistencyTrendData
-            : null;
+        : consistencyTrendData?.data && Array.isArray(consistencyTrendData.data)
+          ? consistencyTrendData.data.map((entry) => ({
+              ...entry,
+              date: entry.date,
+              score: entry.score || entry.value || 0,
+            }))
+          : consistencyTrendData?.history &&
+            Array.isArray(consistencyTrendData.history)
+            ? consistencyTrendData.history.map((entry) => ({
+                ...entry,
+                date: entry.date,
+                score: entry.score || entry.value || 0,
+              }))
+            : Array.isArray(consistencyTrendData)
+              ? consistencyTrendData
+              : null;
   console.log(
     "✅ [Dashboard] Transformed consistency data:",
     transformedConsistencyData,
@@ -364,6 +413,11 @@ export default function Dashboard() {
   const hasEnoughTrades = totalTrades >= 5;
   const hasNoTrades = !tradesLoading && totalTrades === 0;
 
+  // Date-specific empty states (prevents stale UI when selectedDate has no trades)
+  const hasMentalBatteryNoData = mentalBatteryData === null;
+  const hasPsychologicalTraitsNoData = psychologicalRadarData === null;
+  const hasStabilityTrendNoData = consistencyTrendData === null;
+
   // Calculate early exit rate from trades
   const trades = tradesData?.results || [];
   const earlyExitCount = trades.filter(
@@ -392,6 +446,7 @@ export default function Dashboard() {
     stateLoading ||
     tradesLoading ||
     waitingForPlanStatus ||
+    tradingPlanLoading ||
     userLoading ||
     psychologicalRadarLoading
   ) {
@@ -614,7 +669,10 @@ export default function Dashboard() {
                     mode="single"
                     selected={selectedDate}
                     onSelect={(date) => {
-                      if (date) setSelectedDate(date);
+                      if (date) {
+                        setSelectedDate(date);
+                        console.log("SELECTED DATE:", date);
+                      }
                       setShowCalendar(false);
                     }}
                     captionLayout="dropdown-buttons"
@@ -631,9 +689,7 @@ export default function Dashboard() {
               <div className="">
                 <MentalBatteryCard
                   percentage={
-                    mentalBatteryData?.battery ||
-                    summaryData?.quickStats?.mentalBattery ||
-                    45
+                    mentalBatteryData?.battery ?? 0
                   }
                   level={
                     mentalBatteryData?.status === "optimal"
@@ -642,13 +698,12 @@ export default function Dashboard() {
                         ? "Strained"
                         : mentalBatteryData?.status === "high_risk"
                           ? "High Risk"
-                          : summaryData?.quickStats?.mentalBatteryLevel ||
-                          "Medium"
+                          : "Stable"
                   }
                   message={mentalBatteryData?.message}
                   drainFactors={mentalBatteryData?.drainFactors}
                   rechargeFactors={mentalBatteryData?.rechargeFactors}
-                  hasNoTrades={hasNoTrades}
+                  hasNoTrades={hasMentalBatteryNoData}
                 />
               </div>
             </div>
@@ -667,32 +722,18 @@ export default function Dashboard() {
               <div className="grid grid-cols-2 gap-4 sm:gap-3">
                 <div className="">
                   <PlanControlCard
-                    percentage={
-                      planControlData?.percentage ||
-                      planControlData?.planCompliance ||
-                      summaryData?.quickStats?.planCompliance ||
-                      78
-                    }
-                    tradesOutsidePlan={
-                      planControlData?.tradesOutsidePlan ||
-                      summaryData?.quickStats?.tradesOutsidePlan ||
-                      2
-                    }
-                    message={planControlData?.message}
-                    tradeScores={planControlData?.tradeScores}
-                    tradesAnalyzed={planControlData?.tradesAnalyzed}
-                    hasNoTrades={hasNoTrades}
-                    trades={tradesData?.results || tradesData || []}
+                    selectedDate={selectedDate}
+                    trades={tradesData?.results || []}
+                    tradingPlan={tradingPlan}
                   />
                 </div>
                 <div className="">
                   <PsychologicalStateDistribution
-                    data={
-                      transformedRadarData || summaryData?.stateDistribution
-                    }
-                    hasNoTrades={hasNoTrades}
-                    trades={tradesData?.results || tradesData || []}
-
+                    data={transformedRadarData}
+                    hasNoTrades={hasPsychologicalTraitsNoData}
+                    selectedDate={selectedDate}
+                    trades={tradesData?.results || []}
+                    tradingPlan={tradingPlan}
                   />
                 </div>
               </div>
@@ -702,8 +743,9 @@ export default function Dashboard() {
             <div className="flex flex-col md:row-span-2">
               <div className="">
                 <BehaviourHeatmap
-                  hasNoTrades={hasNoTrades}
+                  hasNoTrades={behaviorHeatmapLoading ? false : behaviorHeatmapData === null}
                   fetchHistory={fetchBehaviorHeatmapHistory}
+                  selectedDate={selectedDate}
                 />
               </div>
             </div>
@@ -712,26 +754,14 @@ export default function Dashboard() {
             <div> </div>
             <div className="md:col-span-2 h-[264px] mt-[-10px]">
               <QuoteOfTheDay
-                quote={
-                  dailyQuoteData?.quote ||
-                  dailyQuoteData?.text ||
-                  summaryData?.quote?.text ||
-                  "Every trade is just another trade."
-                }
-                author={
-                  dailyQuoteData?.author ||
-                  summaryData?.quote?.author ||
-                  "Mark Minervini"
-                }
+                selectedDate={selectedDate}
               />
             </div>
             <div className="md:col-span-2 h-[264px] mt-[-10px]">
               <PsychologicalStabilityTrend
-                data={transformedConsistencyData || summaryData?.stabilityCurve}
-                hasNoTrades={hasNoTrades}
-                fetchHistory={fetchConsistencyTrendHistory}
-                refetch={refetchConsistencyTrend}
-                trades={tradesData?.results || tradesData?.trades || []}
+                selectedDate={selectedDate}
+                trades={tradesData?.results || []}
+                tradingPlan={tradingPlan}
               />
             </div>
           </div>

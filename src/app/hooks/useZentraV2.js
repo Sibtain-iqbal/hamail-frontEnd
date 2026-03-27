@@ -4,40 +4,52 @@ import { apiClient } from "@/utils/api";
 /**
  * Hook to fetch mental battery status from Zentra V2 API
  */
-export function useMentalBattery() {
+export function useMentalBattery(date = null) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [errorStatus, setErrorStatus] = useState(null);
-  const inFlightRef = useRef(false);
+  const requestIdRef = useRef(0);
 
   const fetchData = useCallback(async (force = false) => {
-    if (inFlightRef.current && !force) {
-      return;
-    }
+    const requestId = ++requestIdRef.current;
 
-    inFlightRef.current = true;
+    // Clear previous state immediately so UI never shows stale data.
+    console.log("FETCHING DATA FOR DATE:", date);
     setLoading(true);
+    setData(null);
     setError(null);
     setErrorStatus(null);
 
     try {
-      const result = await apiClient.getMentalBattery();
-      setData(result);
-      return result;
+      const res = await apiClient.getMentalBattery(date);
+      console.log("API RESPONSE:", res);
+
+      if (requestId !== requestIdRef.current) return res;
+
+      if (!res || (Array.isArray(res) && res.length === 0)) {
+        setData(null);
+        return null;
+      }
+
+      setData(res);
+      return res;
     } catch (err) {
+      if (requestId !== requestIdRef.current) return null;
+
       setError(err.message);
       setErrorStatus(err.status || null);
       // Only log non-403 errors (403 for trading plan is expected for new users)
       if (err.status !== 403) {
         console.error("Error fetching mental battery:", err);
       }
+      setData(null);
       return null;
     } finally {
-      inFlightRef.current = false;
+      if (requestId !== requestIdRef.current) return;
       setLoading(false);
     }
-  }, []);
+  }, [date]);
 
   useEffect(() => {
     fetchData();
@@ -49,40 +61,51 @@ export function useMentalBattery() {
 /**
  * Hook to fetch plan control percentage from Zentra V2 API
  */
-export function usePlanControl() {
+export function usePlanControl(date = null) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [errorStatus, setErrorStatus] = useState(null);
-  const inFlightRef = useRef(false);
+  const requestIdRef = useRef(0);
 
   const fetchData = useCallback(async (force = false) => {
-    if (inFlightRef.current && !force) {
-      return;
-    }
+    const requestId = ++requestIdRef.current;
 
-    inFlightRef.current = true;
+    console.log("FETCHING DATA FOR DATE:", date);
     setLoading(true);
+    setData(null);
     setError(null);
     setErrorStatus(null);
 
     try {
-      const result = await apiClient.getPlanControl();
-      setData(result);
-      return result;
+      const res = await apiClient.getPlanControl(date);
+      console.log("API RESPONSE:", res);
+
+      if (requestId !== requestIdRef.current) return res;
+
+      if (!res || (Array.isArray(res) && res.length === 0)) {
+        setData(null);
+        return null;
+      }
+
+      setData(res);
+      return res;
     } catch (err) {
+      if (requestId !== requestIdRef.current) return null;
+
       setError(err.message);
       setErrorStatus(err.status || null);
       // Only log non-403 errors (403 for trading plan is expected for new users)
       if (err.status !== 403) {
         console.error("Error fetching plan control:", err);
       }
+      setData(null);
       return null;
     } finally {
-      inFlightRef.current = false;
+      if (requestId !== requestIdRef.current) return;
       setLoading(false);
     }
-  }, []);
+  }, [date]);
 
   useEffect(() => {
     fetchData();
@@ -94,52 +117,70 @@ export function usePlanControl() {
 /**
  * Hook to fetch behavior heatmap from Zentra V2 API
  */
-export function useBehaviorHeatmap() {
+export function useBehaviorHeatmap(date = null) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [errorStatus, setErrorStatus] = useState(null);
-  const inFlightRef = useRef(false);
+  const requestIdRef = useRef(0);
 
   const fetchData = useCallback(async (force = false) => {
-    if (inFlightRef.current && !force) {
-      return;
-    }
+    const requestId = ++requestIdRef.current;
 
-    inFlightRef.current = true;
+    console.log("FETCHING DATA FOR DATE:", date);
     setLoading(true);
+    setData(null);
     setError(null);
     setErrorStatus(null);
 
     try {
-      const result = await apiClient.getBehaviorHeatmap();
-      setData(result);
-      return result;
+      const res = await apiClient.getBehaviorHeatmap(date);
+      console.log("API RESPONSE:", res);
+
+      if (requestId !== requestIdRef.current) return res;
+
+      if (!res || (Array.isArray(res) && res.length === 0)) {
+        setData(null);
+        return null;
+      }
+
+      setData(res);
+      return res;
     } catch (err) {
+      if (requestId !== requestIdRef.current) return null;
+
       setError(err.message);
       setErrorStatus(err.status || null);
       // Only log non-403 errors (403 for trading plan is expected for new users)
       if (err.status !== 403) {
         console.error("Error fetching behavior heatmap:", err);
       }
+      setData(null);
       return null;
     } finally {
-      inFlightRef.current = false;
+      if (requestId !== requestIdRef.current) return;
       setLoading(false);
     }
-  }, []);
+  }, [date]);
 
   const fetchHistory = useCallback(async (startDate, endDate) => {
-    inFlightRef.current = true;
+    const requestId = ++requestIdRef.current;
     setLoading(true);
+    setData(null);
     setError(null);
     setErrorStatus(null);
 
     try {
+      console.log("FETCHING DATA FOR DATE:", date);
       const result = await apiClient.getBehaviorHeatmapHistory(
         startDate,
         endDate
       );
+
+      console.log("API RESPONSE:", result);
+
+      if (requestId !== requestIdRef.current) return result;
+
       // API returns {history: [...], count: 0}
       // Extract the first item from history array if it exists for the hook's data state
       const historyData =
@@ -148,18 +189,27 @@ export function useBehaviorHeatmap() {
         result.history.length > 0
           ? result.history[0]
           : result;
-      setData(historyData);
+
+      if (!result || (Array.isArray(result) && result.length === 0)) {
+        setData(null);
+      } else if (Array.isArray(result?.history) && result.history.length === 0) {
+        setData(null);
+      } else {
+        setData(historyData);
+      }
       // Return full result so component can handle the history array structure
       return result;
     } catch (err) {
+      if (requestId !== requestIdRef.current) return null;
       setError(err.message);
       setErrorStatus(err.status || null);
       if (err.status !== 403) {
         console.error("Error fetching behavior heatmap history:", err);
       }
+      setData(null);
       return null;
     } finally {
-      inFlightRef.current = false;
+      if (requestId !== requestIdRef.current) return;
       setLoading(false);
     }
   }, []);
@@ -181,40 +231,51 @@ export function useBehaviorHeatmap() {
 /**
  * Hook to fetch psychological radar from Zentra V2 API
  */
-export function usePsychologicalRadar() {
+export function usePsychologicalRadar(date = null) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [errorStatus, setErrorStatus] = useState(null);
-  const inFlightRef = useRef(false);
+  const requestIdRef = useRef(0);
 
   const fetchData = useCallback(async (force = false) => {
-    if (inFlightRef.current && !force) {
-      return;
-    }
+    const requestId = ++requestIdRef.current;
 
-    inFlightRef.current = true;
+    console.log("FETCHING DATA FOR DATE:", date);
     setLoading(true);
+    setData(null);
     setError(null);
     setErrorStatus(null);
 
     try {
-      const result = await apiClient.getPsychologicalRadar();
-      setData(result);
-      return result;
+      const res = await apiClient.getPsychologicalRadar(date);
+      console.log("API RESPONSE:", res);
+
+      if (requestId !== requestIdRef.current) return res;
+
+      if (!res || (Array.isArray(res) && res.length === 0)) {
+        setData(null);
+        return null;
+      }
+
+      setData(res);
+      return res;
     } catch (err) {
+      if (requestId !== requestIdRef.current) return null;
+
       setError(err.message);
       setErrorStatus(err.status || null);
       // Only log non-403 errors (403 for trading plan is expected for new users)
       if (err.status !== 403) {
         console.error("Error fetching psychological radar:", err);
       }
+      setData(null);
       return null;
     } finally {
-      inFlightRef.current = false;
+      if (requestId !== requestIdRef.current) return;
       setLoading(false);
     }
-  }, []);
+  }, [date]);
 
   useEffect(() => {
     fetchData();
@@ -226,40 +287,51 @@ export function usePsychologicalRadar() {
 /**
  * Hook to fetch breathwork suggestion from Zentra V2 API
  */
-export function useBreathworkSuggestion() {
+export function useBreathworkSuggestion(date = null) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [errorStatus, setErrorStatus] = useState(null);
-  const inFlightRef = useRef(false);
+  const requestIdRef = useRef(0);
 
   const fetchData = useCallback(async (force = false) => {
-    if (inFlightRef.current && !force) {
-      return;
-    }
+    const requestId = ++requestIdRef.current;
 
-    inFlightRef.current = true;
+    console.log("FETCHING DATA FOR DATE:", date);
     setLoading(true);
+    setData(null);
     setError(null);
     setErrorStatus(null);
 
     try {
-      const result = await apiClient.getBreathworkSuggestion();
-      setData(result);
-      return result;
+      const res = await apiClient.getBreathworkSuggestion(date);
+      console.log("API RESPONSE:", res);
+
+      if (requestId !== requestIdRef.current) return res;
+
+      if (!res || (Array.isArray(res) && res.length === 0)) {
+        setData(null);
+        return null;
+      }
+
+      setData(res);
+      return res;
     } catch (err) {
+      if (requestId !== requestIdRef.current) return null;
+
       setError(err.message);
       setErrorStatus(err.status || null);
       // Only log non-403 errors (403 for trading plan is expected for new users)
       if (err.status !== 403) {
         console.error("Error fetching breathwork suggestion:", err);
       }
+      setData(null);
       return null;
     } finally {
-      inFlightRef.current = false;
+      if (requestId !== requestIdRef.current) return;
       setLoading(false);
     }
-  }, []);
+  }, [date]);
 
   useEffect(() => {
     fetchData();
@@ -271,40 +343,51 @@ export function useBreathworkSuggestion() {
 /**
  * Hook to fetch performance window from Zentra V2 API
  */
-export function usePerformanceWindow() {
+export function usePerformanceWindow(date = null) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [errorStatus, setErrorStatus] = useState(null);
-  const inFlightRef = useRef(false);
+  const requestIdRef = useRef(0);
 
   const fetchData = useCallback(async (force = false) => {
-    if (inFlightRef.current && !force) {
-      return;
-    }
+    const requestId = ++requestIdRef.current;
 
-    inFlightRef.current = true;
+    console.log("FETCHING DATA FOR DATE:", date);
     setLoading(true);
+    setData(null);
     setError(null);
     setErrorStatus(null);
 
     try {
-      const result = await apiClient.getPerformanceWindow();
-      setData(result);
-      return result;
+      const res = await apiClient.getPerformanceWindow(date);
+      console.log("API RESPONSE:", res);
+
+      if (requestId !== requestIdRef.current) return res;
+
+      if (!res || (Array.isArray(res) && res.length === 0)) {
+        setData(null);
+        return null;
+      }
+
+      setData(res);
+      return res;
     } catch (err) {
+      if (requestId !== requestIdRef.current) return null;
+
       setError(err.message);
       setErrorStatus(err.status || null);
       // Only log non-403 errors (403 for trading plan is expected for new users)
       if (err.status !== 403) {
         console.error("Error fetching performance window:", err);
       }
+      setData(null);
       return null;
     } finally {
-      inFlightRef.current = false;
+      if (requestId !== requestIdRef.current) return;
       setLoading(false);
     }
-  }, []);
+  }, [date]);
 
   useEffect(() => {
     fetchData();
@@ -316,31 +399,39 @@ export function usePerformanceWindow() {
 /**
  * Hook to fetch consistency trend from Zentra V2 API
  */
-export function useConsistencyTrend(days = "7") {
+export function useConsistencyTrend(days = "7", date = null) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [errorStatus, setErrorStatus] = useState(null);
-  const inFlightRef = useRef(false);
+  const requestIdRef = useRef(0);
 
   const fetchData = useCallback(
     async (force = false) => {
-      if (inFlightRef.current && !force) {
-        return;
-      }
+      const requestId = ++requestIdRef.current;
 
-      inFlightRef.current = true;
+      console.log("FETCHING DATA FOR DATE:", date);
       setLoading(true);
+      setData(null);
       setError(null);
       setErrorStatus(null);
 
       try {
-        const result = await apiClient.getConsistencyTrend(days);
-        console.log('📊 [ConsistencyTrend] API response:', result);
-        setData(result);
-        console.log('✅ [ConsistencyTrend] Data set to state:', result);
-        return result;
+        const res = await apiClient.getConsistencyTrend(days, date);
+        console.log("API RESPONSE:", res);
+
+        if (requestId !== requestIdRef.current) return res;
+
+        if (!res || (Array.isArray(res) && res.length === 0)) {
+          setData(null);
+          return null;
+        }
+
+        setData(res);
+        return res;
       } catch (err) {
+        if (requestId !== requestIdRef.current) return null;
+
         setError(err.message);
         setErrorStatus(err.status || null);
         // Only log non-403 errors (403 for trading plan is expected for new users)
@@ -349,38 +440,49 @@ export function useConsistencyTrend(days = "7") {
         }
         return null;
       } finally {
-        inFlightRef.current = false;
+        if (requestId !== requestIdRef.current) return;
         setLoading(false);
       }
     },
-    [days]
+    [days, date]
   );
 
   const fetchHistory = useCallback(async (startDate, endDate) => {
-    inFlightRef.current = true;
+    const requestId = ++requestIdRef.current;
     setLoading(true);
+    setData(null);
     setError(null);
     setErrorStatus(null);
 
     try {
-      console.log('📅 [ConsistencyTrend] Fetching history:', { startDate, endDate });
+      console.log("FETCHING DATA FOR DATE:", date);
       const result = await apiClient.getConsistencyTrendHistory(
         startDate,
         endDate
       );
-      console.log('📊 [ConsistencyTrend] History API response:', result);
-      setData(result);
-      console.log('✅ [ConsistencyTrend] History data set to state:', result);
+
+      console.log("API RESPONSE:", result);
+
+      if (requestId !== requestIdRef.current) return result;
+
+      if (!result || (Array.isArray(result) && result.length === 0)) {
+        setData(null);
+      } else {
+        setData(result);
+      }
       return result;
     } catch (err) {
+      if (requestId !== requestIdRef.current) return null;
+
       setError(err.message);
       setErrorStatus(err.status || null);
       if (err.status !== 403) {
         console.error("Error fetching consistency trend history:", err);
       }
+      setData(null);
       return null;
     } finally {
-      inFlightRef.current = false;
+      if (requestId !== requestIdRef.current) return;
       setLoading(false);
     }
   }, []);
@@ -402,40 +504,51 @@ export function useConsistencyTrend(days = "7") {
 /**
  * Hook to fetch daily quote from Zentra V2 API
  */
-export function useDailyQuote() {
+export function useDailyQuote(date = null) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [errorStatus, setErrorStatus] = useState(null);
-  const inFlightRef = useRef(false);
+  const requestIdRef = useRef(0);
 
   const fetchData = useCallback(async (force = false) => {
-    if (inFlightRef.current && !force) {
-      return;
-    }
+    const requestId = ++requestIdRef.current;
 
-    inFlightRef.current = true;
+    console.log("FETCHING DATA FOR DATE:", date);
     setLoading(true);
+    setData(null);
     setError(null);
     setErrorStatus(null);
 
     try {
-      const result = await apiClient.getDailyQuote();
-      setData(result);
-      return result;
+      const res = await apiClient.getDailyQuote(date);
+      console.log("API RESPONSE:", res);
+
+      if (requestId !== requestIdRef.current) return res;
+
+      if (!res || (Array.isArray(res) && res.length === 0)) {
+        setData(null);
+        return null;
+      }
+
+      setData(res);
+      return res;
     } catch (err) {
+      if (requestId !== requestIdRef.current) return null;
+
       setError(err.message);
       setErrorStatus(err.status || null);
       // Only log non-403 errors (403 for trading plan is expected for new users)
       if (err.status !== 403) {
         console.error("Error fetching daily quote:", err);
       }
+      setData(null);
       return null;
     } finally {
-      inFlightRef.current = false;
+      if (requestId !== requestIdRef.current) return;
       setLoading(false);
     }
-  }, []);
+  }, [date]);
 
   useEffect(() => {
     fetchData();
