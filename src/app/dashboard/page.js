@@ -510,7 +510,7 @@ export default function Dashboard() {
               <p className="text-red-400">{summaryError || stateError}</p>
               <p className="text-red-400 mt-2">
                 Please make sure your backend is running on
-                http://localhost:5000
+                http://localhost:2000
               </p>
             </div>
           </div>
@@ -743,7 +743,7 @@ export default function Dashboard() {
             <div className="flex flex-col md:row-span-2">
               <div className="">
                 <BehaviourHeatmap
-                  hasNoTrades={behaviorHeatmapLoading ? false : behaviorHeatmapData === null}
+                  hasNoTrades={behaviorHeatmapLoading ? false : (!behaviorHeatmapData || behaviorHeatmapData.totalTrades === 0)}
                   fetchHistory={fetchBehaviorHeatmapHistory}
                   selectedDate={selectedDate}
                 />

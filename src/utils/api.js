@@ -1,6 +1,13 @@
 // API client for backend connection
-// const API_BASE_URL = "https://api.hellozentra.com/v1" 
-const API_BASE_URL = "http://localhost:2000/v1" 
+const API_BASE_URL = "https://api.hellozentra.com/v1" 
+// const API_BASE_URL = "http://localhost:2000/v1" 
+
+// Normalise any date value to "YYYY-MM-DD" string expected by the backend.
+const toDateStr = (date) => {
+  if (!date) return null;
+  const d = date instanceof Date ? date : new Date(date);
+  return d.toISOString().split("T")[0];
+};
 
 class ApiClient {
   constructor() {
@@ -275,7 +282,7 @@ class ApiClient {
   }
 
   async getDashboardSummary(period = "MONTH", date = null) {
-    const dateParam = date ? `&date=${date instanceof Date ? date.toISOString() : date}` : "";
+    const dateParam = date ? `&date=${toDateStr(date)}` : "";
     return this.fetch(`/dashboard/summary?period=${period}${dateParam}`);
   }
 
@@ -408,11 +415,10 @@ class ApiClient {
     return this.fetch("/health");
   }
 
-  // Zentra V2 endpoints - use v2 base URL
+  // Zentra V2 endpoints - use v2 base URL (same server as V1, just /v2 path)
   async fetchV2(endpoint, options = {}) {
     const token = this.getToken();
-    const v2BaseURL =
-      this.baseURL.replace("/v1", "/v2") || "http://localhost:5000/v2";
+    const v2BaseURL = this.baseURL.replace("/v1", "/v2");
     const headers = {
       "Content-Type": "application/json",
       ...options.headers,
@@ -463,79 +469,54 @@ class ApiClient {
 
   // Zentra V2 endpoints
   async getMentalBattery(date = null) {
-    const query = date
-      ? `?date=${date instanceof Date ? date.toISOString() : date}`
-      : "";
+    const query = date ? `?date=${toDateStr(date)}` : "";
     return this.fetchV2(`/zentra/mental-battery${query}`);
   }
 
   async getPlanControl(date = null) {
-    const query = date
-      ? `?date=${date instanceof Date ? date.toISOString() : date}`
-      : "";
+    const query = date ? `?date=${toDateStr(date)}` : "";
     return this.fetchV2(`/zentra/plan-control${query}`);
   }
 
   async getBehaviorHeatmap(date = null) {
-    const query = date
-      ? `?date=${date instanceof Date ? date.toISOString() : date}`
-      : "";
+    const query = date ? `?date=${toDateStr(date)}` : "";
     return this.fetchV2(`/zentra/behavior-heatmap${query}`);
   }
 
   async getPsychologicalRadar(date = null) {
-    const query = date
-      ? `?date=${date instanceof Date ? date.toISOString() : date}`
-      : "";
+    const query = date ? `?date=${toDateStr(date)}` : "";
     return this.fetchV2(`/zentra/psychological-radar${query}`);
   }
 
   async getBreathworkSuggestion(date = null) {
-    const query = date
-      ? `?date=${date instanceof Date ? date.toISOString() : date}`
-      : "";
+    const query = date ? `?date=${toDateStr(date)}` : "";
     return this.fetchV2(`/zentra/breathwork-suggestion${query}`);
   }
 
   async getPerformanceWindow(date = null) {
-    const query = date
-      ? `?date=${date instanceof Date ? date.toISOString() : date}`
-      : "";
+    const query = date ? `?date=${toDateStr(date)}` : "";
     return this.fetchV2(`/zentra/performance-window${query}`);
   }
 
   async getConsistencyTrend(days = "7", date = null) {
-    // Use history endpoint with date range for last N days
     const endDate = date ? new Date(date) : new Date();
     const startDate = new Date(endDate);
     startDate.setDate(startDate.getDate() - parseInt(days));
-    
-    console.log('🌐 [API] Calling /zentra/consistency-trend/history with date range:', {
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString()
-    });
-    
-    const result = await this.getConsistencyTrendHistory(
+    return this.getConsistencyTrendHistory(
       startDate.toISOString(),
       endDate.toISOString()
     );
-    console.log('📦 [API] /zentra/consistency-trend/history response:', result);
-    return result;
   }
 
   async getBehaviorHeatmapHistory(startDate, endDate) {
     const params = [];
     if (startDate) {
       const dateStr = startDate instanceof Date ? startDate.toISOString() : startDate;
-      // Format date as YYYY-MM-DDTHH:mm:ssZ (remove milliseconds if present)
-      const formattedDate = dateStr.replace(/\.\d{3}Z$/, 'Z');
-      params.push(`startDate=${formattedDate}`);
+      params.push(`startDate=${dateStr.replace(/\.\d{3}Z$/, 'Z')}`);
     }
     if (endDate) {
       const dateStr = endDate instanceof Date ? endDate.toISOString() : endDate;
-      // Format date as YYYY-MM-DDTHH:mm:ssZ (remove milliseconds if present)
-      const formattedDate = dateStr.replace(/\.\d{3}Z$/, 'Z');
-      params.push(`endDate=${formattedDate}`);
+      params.push(`endDate=${dateStr.replace(/\.\d{3}Z$/, 'Z')}`);
     }
     const query = params.length > 0 ? `?${params.join('&')}` : '';
     return this.fetchV2(`/zentra/behavior-heatmap/history${query}`);
@@ -545,28 +526,18 @@ class ApiClient {
     const params = [];
     if (startDate) {
       const dateStr = startDate instanceof Date ? startDate.toISOString() : startDate;
-      // Format date as YYYY-MM-DDTHH:mm:ssZ (remove milliseconds if present)
-      const formattedDate = dateStr.replace(/\.\d{3}Z$/, 'Z');
-      params.push(`startDate=${formattedDate}`);
+      params.push(`startDate=${dateStr.replace(/\.\d{3}Z$/, 'Z')}`);
     }
     if (endDate) {
       const dateStr = endDate instanceof Date ? endDate.toISOString() : endDate;
-      // Format date as YYYY-MM-DDTHH:mm:ssZ (remove milliseconds if present)
-      const formattedDate = dateStr.replace(/\.\d{3}Z$/, 'Z');
-      params.push(`endDate=${formattedDate}`);
+      params.push(`endDate=${dateStr.replace(/\.\d{3}Z$/, 'Z')}`);
     }
     const query = params.length > 0 ? `?${params.join('&')}` : '';
-    const endpoint = `/zentra/consistency-trend/history${query}`;
-    console.log('🌐 [API] Calling', endpoint);
-    const result = await this.fetchV2(endpoint);
-    console.log('📦 [API] /zentra/consistency-trend/history response:', result);
-    return result;
+    return this.fetchV2(`/zentra/consistency-trend/history${query}`);
   }
 
   async getDailyQuote(date = null) {
-    const query = date
-      ? `?date=${date instanceof Date ? date.toISOString() : date}`
-      : "";
+    const query = date ? `?date=${toDateStr(date)}` : "";
     return this.fetchV2(`/zentra/daily-quote${query}`);
   }
 }
