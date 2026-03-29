@@ -6,6 +6,7 @@ import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
+import {apiClient} from "@/utils/api";
 import { useRouter } from "next/navigation";
 import {
   ChartBarIcon,
