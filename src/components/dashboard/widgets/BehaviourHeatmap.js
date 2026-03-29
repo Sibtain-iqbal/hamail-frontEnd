@@ -1,6 +1,6 @@
 "use client";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Squares2X2Icon } from "@heroicons/react/24/outline";
 import BehaviourHeatmapDatePicker from "./BehaviourHeatmapDatePicker";
 import CardIconTooltip from "./CardIconTooltip";
@@ -86,6 +86,15 @@ const getStartOfWeek = (date) => {
   return new Date(d.setDate(diff));
 };
 
+// Helper to normalize dates to a local YYYY-MM-DD key.
+const toLocalDateKey = (dateLike) => {
+  const d = dateLike instanceof Date ? dateLike : new Date(dateLike);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
 // Helper: Normalize date to midnight UTC
 const normalizeDate = (date) => {
   const d = new Date(date);
@@ -136,6 +145,11 @@ const HeatmapTile = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false);
 
+  // Prevent stale tooltip content when the date/range changes quickly.
+  useEffect(() => {
+    if (isLoadingHistory) setIsHovered(false);
+  }, [isLoadingHistory, window]);
+
   return (
     <div
       className="relative flex-1 min-w-0"
@@ -156,7 +170,8 @@ const HeatmapTile = ({
         }}
       />
       <AnimatePresence>
-        {isHovered && window && (
+        {/* Only show tooltip when the cell has real score data */}
+        {isHovered && window && typeof window.score === "number" && Number.isFinite(window.score) && (
           <motion.div
             initial={{ opacity: 0, y: 5, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -166,7 +181,7 @@ const HeatmapTile = ({
           >
             <div className="bg-[#1A1A1A] bg-gradient-to-br  from-[#262626] to-[#1A1A1A] border border-white/10 rounded-xl p-3 shadow-2xl">
               <div className="text-white text-sm font-semibold mb-1">
-                Score: {window.score}{" "}
+                Score: {window.score ?? "—"}{" "}
                 <span className="text-xs font-normal text-gray-400">
                   ({window.tradeCount} trades)
                 </span>
@@ -188,63 +203,117 @@ const HeatmapTile = ({
 export default function BehaviourHeatmap({
   hasNoTrades = false,
   fetchHistory = null,
+  selectedDate = null,
 }) {
-  // Date range state
-  const [dateRange, setDateRange] = useState(() => {
-    // Default to current week (Mon-Sun)
-    const today = new Date();
-    const start = getStartOfWeek(today);
+  // Track which date the currently-displayed data belongs to.
+  // Any data fetched for a different date is discarded before render.
+  const activeDateKeyRef = useRef(null);
+
+  const getDateKey = (date) =>
+    date ? toLocalDateKey(new Date(date)) : "today";
+
+  // Derive week range from selectedDate (stable, no separate state needed)
+  const dateRange = useMemo(() => {
+    const base = selectedDate ? new Date(selectedDate) : new Date();
+    const start = getStartOfWeek(base);
     const end = new Date(start);
     end.setDate(start.getDate() + 6);
     return { start, end };
-  });
+  }, [selectedDate]);
 
+  // historyData always starts empty; only set after a confirmed fetch for the active date
   const [historyData, setHistoryData] = useState([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const requestIdRef = useRef(0);
 
-  // Fetch data when dateRange changes
+  const weekDateKeys = useMemo(() => {
+    const weekStart = new Date(dateRange.start);
+    weekStart.setHours(0, 0, 0, 0);
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(weekStart);
+      d.setDate(weekStart.getDate() + i);
+      return toLocalDateKey(d);
+    });
+  }, [dateRange]);
+
+  // The fetch window is always exactly the selected date (single day)
+  const rangeStartEnd = useMemo(() => {
+    const fetchStart = selectedDate ? new Date(selectedDate) : new Date(dateRange.start);
+    fetchStart.setHours(0, 0, 0, 0);
+    const fetchEnd = new Date(fetchStart);
+    fetchEnd.setHours(23, 59, 59, 999);
+    return { start: fetchStart, end: fetchEnd };
+  }, [selectedDate, dateRange]);
+
+  // Filter history to only entries that fall within the fetch window AND have real trades
+  const filteredHistoryData = useMemo(() => {
+    if (hasNoTrades) return [];
+    const { start, end } = rangeStartEnd;
+    return (historyData || []).filter((dayEntry) => {
+      if (!dayEntry?.date) return false;
+      const t = new Date(dayEntry.date).getTime();
+      if (!Number.isFinite(t) || t < start.getTime() || t > end.getTime()) return false;
+      // Only include entries that have at least one window with a real score
+      return Array.isArray(dayEntry.windows) &&
+        dayEntry.windows.some((w) => w.score !== null && w.score !== undefined && w.tradeCount > 0);
+    });
+  }, [historyData, rangeStartEnd, hasNoTrades]);
+
+  // Single fetch function — always fetches for the current selectedDate
   const fetchData = useCallback(async () => {
     if (!fetchHistory) return;
 
-    setIsLoadingHistory(true);
-    try {
-      const startIso = getIsoString(dateRange.start);
-      const endIso = getIsoString(dateRange.end, true);
+    const dateKey = getDateKey(selectedDate);
+    // Mark this date as the active one before any async work
+    activeDateKeyRef.current = dateKey;
+    const requestId = ++requestIdRef.current;
 
-      console.log("Fetching heatmap data for range:", startIso, endIso);
+    // Always clear immediately — no stale data ever shown
+    setHistoryData([]);
+    setIsLoadingHistory(true);
+
+    if (hasNoTrades) {
+      setIsLoadingHistory(false);
+      return;
+    }
+
+    try {
+      const startIso = getIsoString(rangeStartEnd.start);
+      const endIso = getIsoString(rangeStartEnd.end, true);
       const result = await fetchHistory(startIso, endIso);
 
-      if (result) {
-        // If result has a 'history' array, use it. Otherwise wrap single result if applicable.
-        // Based on API snippet, result.history is the array.
-        const history = result.history || (result.windows ? [result] : []);
-        setHistoryData(history);
-      } else {
-        setHistoryData([]);
-      }
+      // Discard if date changed or a newer request started while we were waiting
+      if (requestId !== requestIdRef.current) return;
+      if (activeDateKeyRef.current !== dateKey) return;
+
+      const history = result?.history || (result?.windows ? [result] : []);
+      // Strip entries with no real trade data before storing
+      const validHistory = (history || []).filter(
+        (h) => h && Array.isArray(h.windows) &&
+          h.windows.some((w) => w.score !== null && w.score !== undefined && w.tradeCount > 0)
+      );
+      setHistoryData(validHistory);
     } catch (error) {
       console.error("Error fetching heatmap data:", error);
-      setHistoryData([]); // Reset on error
+      if (requestId !== requestIdRef.current) return;
+      setHistoryData([]);
     } finally {
+      if (requestId !== requestIdRef.current) return;
       setIsLoadingHistory(false);
     }
-  }, [dateRange, fetchHistory]);
+  }, [fetchHistory, selectedDate, rangeStartEnd, hasNoTrades]);
 
+  // Re-fetch whenever selectedDate or hasNoTrades changes.
+  // Clear state synchronously first so there is zero render with stale data.
   useEffect(() => {
+    setHistoryData([]);
+    setIsLoadingHistory(Boolean(fetchHistory && !hasNoTrades));
     fetchData();
   }, [fetchData]);
 
   const handleDateChange = (newRange) => {
-    // BehaviourHeatmapDatePicker returns { start, end } in range mode
-    // If it returns a single date (old mode), handle it gracefully just in case
     if (newRange instanceof Date) {
-      // Should not happen with mode="range", but fallback:
-      const start = getStartOfWeek(newRange);
-      const end = new Date(start);
-      end.setDate(start.getDate() + 6);
-      setDateRange({ start, end });
-    } else {
-      setDateRange(newRange);
+      setDateRange({ start: getStartOfWeek(newRange), end: (() => { const e = getStartOfWeek(newRange); e.setDate(e.getDate() + 6); return e; })() });
     }
   };
 
@@ -252,27 +321,29 @@ export default function BehaviourHeatmap({
   // We want to aggregate data by (DayOfWeek, TimeSlot).
   // DayOfWeek: 0 (Mon) - 6 (Sun). Note: JS getDay() is 0=Sun. We want Mon=0.
   const aggregatedData = useMemo(() => {
-    const map = new Map(); // Key: "dayIndex-startTime", Value: { totalScore, totalTrades, count, message, color }
+    const map = new Map();
 
-    historyData.forEach((dayEntry) => {
+    filteredHistoryData.forEach((dayEntry) => {
       if (!dayEntry.date || !dayEntry.windows) return;
 
-      const date = new Date(dayEntry.date);
-      // Adjust JS getDay (0=Sun) to our 0=Mon system
-      let dayIndex = date.getDay() - 1;
-      if (dayIndex === -1) dayIndex = 6; // Sunday
+      const dayKey = toLocalDateKey(dayEntry.date);
+      const dayIndex = weekDateKeys.indexOf(dayKey);
+      if (dayIndex === -1) return;
 
       const normalizedWindows = processWindows(dayEntry.windows);
 
       normalizedWindows.forEach((window) => {
         if (window.startHour === undefined) return;
+        // Skip windows with no real trade data
+        if (!window.tradeCount || window.score === null || window.score === undefined) return;
 
         const timeKey = `${window.startHour.toString().padStart(2, "0")}:00`;
-        const key = `${dayIndex}-${timeKey}`; // e.g., "0-09:00" for Mon 9am
+        const key = `${dayIndex}-${timeKey}`;
 
         if (!map.has(key)) {
           map.set(key, {
-            totalScore: 0,
+            scoreSum: 0,
+            scoreCount: 0,
             totalTrades: 0,
             count: 0,
             startHour: window.startHour,
@@ -283,17 +354,24 @@ export default function BehaviourHeatmap({
         }
 
         const agg = map.get(key);
-        agg.totalScore += window.score || 0;
+        if (typeof window.score === "number" && Number.isFinite(window.score)) {
+          agg.scoreSum += window.score;
+          agg.scoreCount += 1;
+        }
         agg.totalTrades += window.tradeCount || 0;
         agg.count += 1;
-        // Store raw data to determine dominant color/message later if needed
         if (window.message) agg.messages.push(window.message);
         if (window.color) agg.colors.push(window.color);
       });
     });
 
     return map;
-  }, [historyData]);
+  }, [filteredHistoryData, weekDateKeys]);
+
+ const hasAnyHeatmapScores = useMemo(() => {
+  if (isLoadingHistory) return true; // don't flash "no data" while loading
+  return filteredHistoryData.length > 0;
+}, [filteredHistoryData, isLoadingHistory]);
 
   // Helper to retrieve aggregated window for render
   const getAggregatedWindow = (dayIndex, timeSlotStart) => {
@@ -303,12 +381,14 @@ export default function BehaviourHeatmap({
 
     if (!agg) return null;
 
-    const avgScore = Math.round(agg.totalScore / agg.count);
+    const avgScore =
+      agg.scoreCount > 0 ? Math.round(agg.scoreSum / agg.scoreCount) : null;
 
     // Determine color based on average score
     // Logic: >= 70 green, >= 40 yellow, < 40 red
     let color = "grey";
-    if (avgScore >= 70) color = "green";
+    if (avgScore === null) color = "grey";
+    else if (avgScore >= 70) color = "green";
     else if (avgScore >= 40) color = "yellow";
     else color = "red";
 
@@ -319,9 +399,11 @@ export default function BehaviourHeatmap({
       color: color,
       count: agg.count, // Number of data points aggregated
       message:
-        agg.count > 1
-          ? `Avg. Score: ${avgScore}% over ${agg.count} sessions`
-          : agg.messages[0] || "No Data",
+        avgScore === null
+          ? agg.messages[0] || "No Data"
+          : agg.count > 1
+            ? `Avg. Score: ${avgScore}% over ${agg.count} sessions`
+            : agg.messages[0] || "No Data",
       // preserve dimensions
       startHour: agg.startHour,
       endHour: agg.endHour,
@@ -353,7 +435,8 @@ export default function BehaviourHeatmap({
 
   const currentTimeBlock = getCurrentTimeBlock();
   const today = new Date();
-  const currentDayIndex = today.getDay() - 1 === -1 ? 6 : today.getDay() - 1;
+  const currentDayIndex =
+    today.getDay() - 1 === -1 ? 6 : today.getDay() - 1;
 
   // Render variables
   // If range is > 7 days, we still show Mon-Sun columns.
@@ -368,8 +451,17 @@ export default function BehaviourHeatmap({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.2 }}
-      className="bg-[#E8F2F3] rounded-[20px] p-4 sm:p-5  border border-[#FFFFFF] flex flex-col"
+      className="relative bg-[#E8F2F3] rounded-[20px] p-4 sm:p-5  border border-[#FFFFFF] flex flex-col"
     >
+      {!isLoadingHistory && !hasAnyHeatmapScores && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/60 backdrop-blur-[2px] z-20 rounded-[20px]">
+          <div className="bg-white/80 px-6 py-4 rounded-xl shadow-sm border border-white/50 text-center">
+            <p className="text-sm font-medium text-gray-500">
+              No data available for this date
+            </p>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center justify-between gap-3 w-full ">
           <h3

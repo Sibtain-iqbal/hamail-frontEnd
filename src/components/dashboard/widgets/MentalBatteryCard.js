@@ -60,7 +60,9 @@ export default function MentalBatteryCard({
           </div>
           <div className="mt-6 text-center">
             <div className="text-4xl font-bold text-gray-400">--%</div>
-            <p className="text-sm text-gray-500 mt-2">No data available</p>
+            <p className="text-sm text-gray-500 mt-2">
+              No data available for this date
+            </p>
           </div>
         </div>
       </CardWrapper>
